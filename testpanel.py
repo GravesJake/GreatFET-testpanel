@@ -28,15 +28,12 @@ class TestPanel(tk.Tk):
 		canvas = PanelCanvas(self)
 		status = StatusBar(self)
 
+	def openOptions(self):
+		options = PinOptions(self)
+
 		
 	def doNothing(self):
 		print("do nothing")
-
-	def pin_button_popup(self):
-		print("pin button popup window")
-		popup = tk.Toplevel()
-		popup.title("Pin Options")
-		self.pin_button1.config(image=self.red_button_image)
 
 	def knight_rider(self):
 		gf = GreatFET()
@@ -104,11 +101,24 @@ class PanelCanvas(tk.Canvas):
 								image=parent.black_button_image, highlightbackground='#afeeee', borderwidth=0)
 		pin_button1_window = self.create_window(230, 44, window=self.pin_button1)	# create a button at x, y
 
+		self.pin_button2 = tk.Button(self, command=parent.openOptions, 
+								image=parent.black_button_image, highlightbackground='#afeeee', borderwidth=0)
+		pin_button2_window = self.create_window(275, 44, window=self.pin_button2)	# create a button at x, y
+
 class StatusBar(tk.Label):
 	def __init__(self, parent):
 		tk.Label.__init__(self, parent)
 		self.config(text="Test Status Bar", bd=1, relief=tk.SUNKEN, anchor=tk.W)	# bd = border, SUNKEN is style, anchored West
 		self.pack(side=tk.BOTTOM, fill=tk.X)
+
+class PinOptions(tk.Toplevel):
+	def __init__(self, parent):
+		tk.Toplevel.__init__(self)
+		self.title("Pin Options")
+		self.geometry('400x300')
+		self.resizable(width=False, height=False)
+		self.config(bg='white')
+		#self.pin_button1.config(image=self.red_button_image)
 
 panel = TestPanel()
 panel.mainloop()
