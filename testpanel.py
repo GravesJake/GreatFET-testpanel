@@ -1,62 +1,114 @@
 #!/usr/bin/env python3
 
-from tkinter import *
-import tkinter.messagebox
-
+import sys
+import tkinter as tk
+from tkinter.messagebox import showinfo
 from PIL import Image, ImageTk
 
-def doNothing():
-	print("do nothing")
+# GreatFET 
+import time
+from greatfet import GreatFET
+from greatfet.protocol import vendor_requests
 
-window = Tk()
-window.wm_title("greatFET Test Panel")
-window.geometry('{}x{}'.format(1250, 960))
-window.resizable(width=False, height=False)
+class TestPanel(tk.Tk):
+	def __init__(self):
+		tk.Tk.__init__(self)
+		self.black_button_image = tk.PhotoImage(file='black_button.png')
+		self.green_button_image = tk.PhotoImage(file='green_button.png')
+		self.red_button_image = tk.PhotoImage(file='red_button.png')
 
-# Message Box
-#tkinter.messagebox.showinfo('Window Title', 'GSG is greeeeeeat')
+		# initialize the window
+		tk.Tk.wm_title(self, "GreatFET Test Panel")
+		tk.Tk.geometry(self, '{}x{}'.format(1250, 960))
+		tk.Tk.resizable(self, width=False, height=False)
 
-def questionFunc():
-	answer = tkinter.messagebox.askquestion('Question 1', 'Is your greatFET plugged in?')
-	if answer == 'yes':
-		print("congratulations")
+		menuBar = PanelMenu(self)
+		self.config(menu=menuBar)
+		toolbar = PanelToolbar(self)
+		canvas = PanelCanvas(self)
+		status = StatusBar(self)
 
-load = Image.open('greatBLUE.png')
-render = ImageTk.PhotoImage(load)
+		
+	def doNothing(self):
+		print("do nothing")
 
-img = Label(image=render)
-img.image = render
-img.place(x=0, y=32)
+	def pin_button_popup(self):
+		print("pin button popup window")
+		popup = tk.Toplevel()
+		popup.title("Pin Options")
+		self.pin_button1.config(image=self.red_button_image)
 
-# Main Menu
-menu = Menu(window)
-window.config(menu=menu)
+	def knight_rider(self):
+		gf = GreatFET()
+		gf.vendor_request_out(vendor_requests.HEARTBEAT_STOP)
+		gf.vendor_request_out(vendor_requests.REGISTER_GPIO, value=0, data=[14, 3, 1, 2, 13, 3, 12, 3])
 
-subMenu = Menu(menu, tearoff=0)							# tearoff removes the annoying dotted line "button" located at 0
-menu.add_cascade(label="File", menu=subMenu) 			# subMenu will appear as the dropdown under File
+		def set_led(gf, lednum, state):
+		    gf.vendor_request_out(vendor_requests.WRITE_GPIO, data=[int(not(state)), lednum])
 
-subMenu.add_command(label="New Project", command=doNothing)
-subMenu.add_command(label="New", command=doNothing)
-subMenu.add_separator()
-subMenu.add_command(label="Exit", command=window.quit)
+		pattern = [0, 1, 2, 3, 2, 1, 0]
+		for led in pattern:
+		    set_led(gf, led, True)
+		    time.sleep(0.1)
+		    set_led(gf, led, False)
 
-editMenu = Menu(menu, tearoff=0)
-menu.add_cascade(label="Edit", menu=editMenu)
-editMenu.add_command(label="Redo", command=doNothing)
+class PanelMenu(tk.Menu):
+	def __init__(self, parent):
+		tk.Menu.__init__(self, parent)
+		subMenu = tk.Menu(self, tearoff=0)							# tearoff removes the dotted line "button" located at 0
+		self.add_cascade(label="File", menu=subMenu) 				# subMenu will appear as the dropdown under File
+		subMenu.add_command(label="New Project", command=self.doNothing)
+		subMenu.add_command(label="New", command=self.doNothing)
+		subMenu.add_separator()
+		subMenu.add_command(label="Exit", command=self.quit)
 
+		editMenu = tk.Menu(self, tearoff=0)
+		self.add_cascade(label="Edit", menu=editMenu)
+		editMenu.add_command(label="Redo", command=self.doNothing)
 
-# Toolbar
-toolbar = Frame(window, bg="blue")
-insertButton = Button(toolbar, text="Test Toolbar Question Button", command=questionFunc)
-insertButton.pack(side=LEFT, padx=2, pady=2)			# pad 2 pixels in the x and y direction on the button
-printButton = Button(toolbar, text="Test Toolbar Button", command=doNothing)
-printButton.pack(side=LEFT, padx=2, pady=2)
-toolbar.pack(side=TOP, fill=X)
+	def doNothing(self):
+		print("do nothing")
 
+	def quit(self):
+		sys.exit(0)
 
-# Status Bar
-status = Label(window, text="Test Status Bar", bd=1, relief=SUNKEN, anchor=W)	# bd = border, SUNKEN is style, anchored West
-status.pack(side=BOTTOM, fill=X)
+class PanelToolbar(tk.Frame):
+	def __init__(self, parent):
+		tk.Frame.__init__(self, parent)
+		self.config(bg="white")
+		insertButton = tk.Button(self, text="Test Toolbar Question Button", command=self.questionFunc)
+		insertButton.pack(side=tk.LEFT, padx=2, pady=2)			# pad 2 pixels in the x and y direction on the button
+		printButton = tk.Button(self, text="Test Toolbar Button", command=self.doNothing)
+		printButton.pack(side=tk.LEFT, padx=2, pady=2)
+		self.pack(side=tk.TOP, fill=tk.X)
+		#toolbar.grid(row=0, column=0, fill=column)
 
+	def questionFunc(self):
+		answer = tk.messagebox.askquestion('Question 1', 'Is your greatFET plugged in?')
+		if answer == 'yes':
+			print("congratulations")
 
-window.mainloop() # make it stay open
+	def doNothing(self):
+		print("do nothing")
+
+class PanelCanvas(tk.Canvas):
+	def __init__(self, parent):
+		tk.Canvas.__init__(self, parent)
+		self.config(width=1250, height=910, bg='white')
+		self.pack()
+		self.board_image = tk.PhotoImage(file = 'greatBLUE.png')
+		self.create_image(25, 0, image=self.board_image, anchor='nw')	# create an image (GreatFET) at position x, y on the canvas, anchored at the nw (top left) corner of the image
+
+		# Pin Buttons
+		self.pin_button1 = tk.Button(self, command=parent.knight_rider, 
+								image=parent.black_button_image, highlightbackground='#afeeee', borderwidth=0)
+		pin_button1_window = self.create_window(230, 44, window=self.pin_button1)	# create a button at x, y
+
+class StatusBar(tk.Label):
+	def __init__(self, parent):
+		tk.Label.__init__(self, parent)
+		self.config(text="Test Status Bar", bd=1, relief=tk.SUNKEN, anchor=tk.W)	# bd = border, SUNKEN is style, anchored West
+		self.pack(side=tk.BOTTOM, fill=tk.X)
+
+panel = TestPanel()
+panel.mainloop()
