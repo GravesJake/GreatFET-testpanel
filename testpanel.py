@@ -2,13 +2,16 @@
 
 import sys
 import tkinter as tk
+from tkinter import *
 from tkinter.messagebox import showinfo
+from tkinter.ttk import Combobox,Treeview,Scrollbar
+
 from PIL import Image, ImageTk
 
 # GreatFET 
 import time
-from greatfet import GreatFET
-from greatfet.protocol import vendor_requests
+#from greatfet import GreatFET
+#from greatfet.protocol import vendor_requests
 
 class TestPanel(tk.Tk):
 	def __init__(self):
@@ -36,7 +39,7 @@ class TestPanel(tk.Tk):
 		print("do nothing")
 
 	def knight_rider(self):
-		gf = GreatFET()
+		'''gf = GreatFET()
 		gf.vendor_request_out(vendor_requests.HEARTBEAT_STOP)
 		gf.vendor_request_out(vendor_requests.REGISTER_GPIO, value=0, data=[14, 3, 1, 2, 13, 3, 12, 3])
 
@@ -47,7 +50,7 @@ class TestPanel(tk.Tk):
 		for led in pattern:
 		    set_led(gf, led, True)
 		    time.sleep(0.1)
-		    set_led(gf, led, False)
+		    set_led(gf, led, False)'''
 
 class PanelMenu(tk.Menu):
 	def __init__(self, parent):
@@ -119,6 +122,35 @@ class PinOptions(tk.Toplevel):
 		self.resizable(width=False, height=False)
 		self.config(bg='white')
 		#self.pin_button1.config(image=self.red_button_image)
+    #def __init__(self, master):
+        #""" Initialize the frame. """
+		super(PinOptions, self).__init__(parent)
+		self.grid()
+		self.create_GUI() #parent broke it
+		self.title("GUI Panel")
+		self.geometry("500x500")
+		self.configure(bg="white")
+
+
+	def create_GUI(self): #added parent
+		frame1 = tk.LabelFrame(self, text="frame1", width=30, height=13, bd=5)
+		frame1.pack(side=RIGHT)
+
+		self.button1= Button(frame1, text="On/Off", fg = "red", command= self.connectFunc)
+		self.button1.pack(side=LEFT)
+		answer = tk.messagebox.askquestion('I/O', 'Input?')
+		if answer == 'no':
+			answer = tk.messagebox.askquestion('I/O', 'Output?')
+		
+	def connectFunc(self):
+		print("nothing")
+
+
+
 
 panel = TestPanel()
+
 panel.mainloop()
+
+
+#root.mainloop()
