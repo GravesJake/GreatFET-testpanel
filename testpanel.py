@@ -2,7 +2,10 @@
 
 import sys
 import tkinter as tk
+from tkinter import *
 from tkinter.messagebox import showinfo
+from tkinter.ttk import Combobox,Treeview,Scrollbar
+
 from PIL import Image, ImageTk
 
 # GreatFET 
@@ -113,10 +116,27 @@ class StatusBar(tk.Label):
 class PinOptions(tk.Toplevel):
 	def __init__(self, parent):
 		tk.Toplevel.__init__(self)
-		self.title("Pin Options")
-		self.geometry('400x300')
-		self.resizable(width=False, height=False)
-		self.config(bg='white')
+
+        #""" Initialize the frame. """
+		self.grid()
+		self.create_GUI() 
+		self.title("GUI Panel")
+		self.geometry("200x100")
+		self.configure(bg="white")
+
+
+	def create_GUI(self): 
+		frame1 = tk.LabelFrame(self, text="frame1", width=30, height=13, bd=5)
+		frame1.pack(side=RIGHT)
+
+		self.button1= Button(frame1, text="On/Off", fg = "red", command= self.connectFunc)
+		self.button1.pack(side=LEFT)
+		answer = tk.messagebox.askquestion('I/O', 'Input?')
+		if answer == 'no':
+			answer = tk.messagebox.askquestion('I/O', 'Output?')
+		
+	def connectFunc(self):
+		print("nothing")
 
 panel = TestPanel()
 panel.mainloop()
