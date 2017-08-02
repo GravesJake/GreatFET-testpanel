@@ -18,9 +18,9 @@ class TestPanel(tk.Tk):
 		self.red_button_image = tk.PhotoImage(file='red_button.png')
 
 		# initialize the window
-		tk.Tk.wm_title(self, "GreatFET Test Panel")
-		tk.Tk.geometry(self, '{}x{}'.format(1250, 960))
-		tk.Tk.resizable(self, width=False, height=False)
+		self.wm_title("GreatFET Test Panel")
+		self.geometry('1250x960')
+		self.resizable(width=False, height=False)
 
 		menuBar = PanelMenu(self)
 		self.config(menu=menuBar)
@@ -30,7 +30,6 @@ class TestPanel(tk.Tk):
 
 	def openOptions(self):
 		options = PinOptions(self)
-
 		
 	def doNothing(self):
 		print("do nothing")
@@ -94,16 +93,16 @@ class PanelCanvas(tk.Canvas):
 		self.config(width=1250, height=910, bg='white')
 		self.pack()
 		self.board_image = tk.PhotoImage(file = 'greatBLUE.png')
-		self.create_image(25, 0, image=self.board_image, anchor='nw')	# create an image (GreatFET) at position x, y on the canvas, anchored at the nw (top left) corner of the image
+		self.create_image(25, 5, image=self.board_image, anchor='nw')	# create an image (GreatFET) at position x, y on the canvas, anchored at the nw (top left) corner of the image
 
 		# Pin Buttons
 		self.pin_button1 = tk.Button(self, command=parent.knight_rider, 
 								image=parent.black_button_image, highlightbackground='#afeeee', borderwidth=0)
-		pin_button1_window = self.create_window(230, 44, window=self.pin_button1)	# create a button at x, y
+		pin_button1_window = self.create_window(230, 49, window=self.pin_button1)	# create a button at x, y
 
 		self.pin_button2 = tk.Button(self, command=parent.openOptions, 
 								image=parent.black_button_image, highlightbackground='#afeeee', borderwidth=0)
-		pin_button2_window = self.create_window(275, 44, window=self.pin_button2)	# create a button at x, y
+		pin_button2_window = self.create_window(275, 49, window=self.pin_button2)	# create a button at x, y
 
 class StatusBar(tk.Label):
 	def __init__(self, parent):
@@ -118,7 +117,6 @@ class PinOptions(tk.Toplevel):
 		self.geometry('400x300')
 		self.resizable(width=False, height=False)
 		self.config(bg='white')
-		#self.pin_button1.config(image=self.red_button_image)
 
 panel = TestPanel()
 panel.mainloop()
