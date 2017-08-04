@@ -2,10 +2,7 @@
 
 import sys
 import tkinter as tk
-from tkinter import *
 from tkinter.messagebox import showinfo
-from tkinter.ttk import Combobox,Treeview,Scrollbar
-
 from PIL import Image, ImageTk
 
 # GreatFET 
@@ -25,17 +22,17 @@ class TestPanel(tk.Tk):
 		self.geometry('1250x960')
 		self.resizable(width=False, height=False)
 
-		menuBar = PanelMenu(self)
-		self.config(menu=menuBar)
+		menubar = PanelMenu(self)
+		self.config(menu=menubar)
 		toolbar = PanelToolbar(self)
-		canvas = PanelCanvas(self)
+		self.canvas = PanelCanvas(self)
 		status = StatusBar(self)
 
-	def openOptions(self):
+	def open_options(self):
 		options = PinOptions(self)
 		
-	def doNothing(self):
-		print("do nothing")
+	def do_nothing(self):
+		print("TestPanel do nothing")
 
 	def knight_rider(self):
 		gf = GreatFET()
@@ -51,44 +48,54 @@ class TestPanel(tk.Tk):
 		    time.sleep(0.1)
 		    set_led(gf, led, False)
 
+	def change_red(self):
+		print("change red")
+		self.canvas.pin_button1.config(image=self.red_button_image)
+
+	def change_green(self):
+		print("change green")
+		self.canvas.pin_button1.config(image=self.green_button_image)
+
+	def change_black(self):
+		print("change black")
+		self.canvas.pin_button1.config(image=self.black_button_image)
+
+
 class PanelMenu(tk.Menu):
 	def __init__(self, parent):
 		tk.Menu.__init__(self, parent)
-		subMenu = tk.Menu(self, tearoff=0)							# tearoff removes the dotted line "button" located at 0
-		self.add_cascade(label="File", menu=subMenu) 				# subMenu will appear as the dropdown under File
-		subMenu.add_command(label="New Project", command=self.doNothing)
-		subMenu.add_command(label="New", command=self.doNothing)
-		subMenu.add_separator()
-		subMenu.add_command(label="Exit", command=self.quit)
+		sub_menu = tk.Menu(self, tearoff=0)							# tearoff removes the dotted line "button" located at 0
+		self.add_cascade(label="File", menu=sub_menu) 				# sub_menu will appear as the dropdown under File
+		sub_menu.add_command(label="New Project", command=parent.do_nothing)
+		sub_menu.add_command(label="New", command=parent.do_nothing)
+		sub_menu.add_separator()
+		sub_menu.add_command(label="Exit", command=quit)
 
-		editMenu = tk.Menu(self, tearoff=0)
-		self.add_cascade(label="Edit", menu=editMenu)
-		editMenu.add_command(label="Redo", command=self.doNothing)
-
-	def doNothing(self):
-		print("do nothing")
+		edit_menu = tk.Menu(self, tearoff=0)
+		self.add_cascade(label="Edit", menu=edit_menu)
+		edit_menu.add_command(label="Redo", command=parent.do_nothing)
 
 	def quit(self):
 		sys.exit(0)
+
 
 class PanelToolbar(tk.Frame):
 	def __init__(self, parent):
 		tk.Frame.__init__(self, parent)
 		self.config(bg="white")
-		insertButton = tk.Button(self, text="Test Toolbar Question Button", command=self.questionFunc)
-		insertButton.pack(side=tk.LEFT, padx=2, pady=2)			# pad 2 pixels in the x and y direction on the button
-		printButton = tk.Button(self, text="Test Toolbar Button", command=self.doNothing)
-		printButton.pack(side=tk.LEFT, padx=2, pady=2)
+		question_button = tk.Button(self, text="Test Toolbar Question Button", command=self.question_func)
+		question_button.pack(side=tk.LEFT, padx=2, pady=2)			# pad 2 pixels in the x and y direction on the button
+		print_button = tk.Button(self, text="Knight Rider", command=parent.knight_rider)
+		print_button.pack(side=tk.LEFT, padx=2, pady=2)
 		self.pack(side=tk.TOP, fill=tk.X)
-		#toolbar.grid(row=0, column=0, fill=column)
 
-	def questionFunc(self):
+	def question_func(self):
 		answer = tk.messagebox.askquestion('Question 1', 'Is your greatFET plugged in?')
 		if answer == 'yes':
 			print("congratulations")
+		else:
+			print("you should probably plug it in")
 
-	def doNothing(self):
-		print("do nothing")
 
 class PanelCanvas(tk.Canvas):
 	def __init__(self, parent):
@@ -98,45 +105,105 @@ class PanelCanvas(tk.Canvas):
 		self.board_image = tk.PhotoImage(file = 'greatBLUE.png')
 		self.create_image(25, 5, image=self.board_image, anchor='nw')	# create an image (GreatFET) at position x, y on the canvas, anchored at the nw (top left) corner of the image
 
-		# Pin Buttons
-		self.pin_button1 = tk.Button(self, command=parent.knight_rider, 
-								image=parent.black_button_image, highlightbackground='#afeeee', borderwidth=0)
-		pin_button1_window = self.create_window(230, 49, window=self.pin_button1)	# create a button at x, y
+		# create J1 pin buttons
+		j1 = 'j1'
+		self.j1_buttons = []
+		x_coord = 233
+		x_offset = 43	# pins are 43 pixels apart on the x axis
+		y_coord = 865
+		y_offset = 41 	# pins are 41 pixels apart on the y axis
+		pin_count = 1
+		self.j1_buttons.append(0)	# pin numbers start at 1
+		
+		for i in range(20):
+			for j in range(2):
+				self.j1_buttons.append(tk.Button(self, command=lambda pin_count=pin_count: self.print_num(j1, pin_count), image=parent.black_button_image,
+									highlightbackground='#afeeee', borderwidth=0))
+				# skip button creation on unusable pins: 1, 2, 11, 36, 38
+				if (pin_count != 1 and pin_count != 2 and pin_count != 11 and pin_count != 36 and pin_count != 38):
+					self.create_window(x_coord, y_coord, window=self.j1_buttons[pin_count])
+				y_coord -= y_offset
+				pin_count += 1
+			x_coord += x_offset
+			y_coord = 865
 
-		self.pin_button2 = tk.Button(self, command=parent.openOptions, 
-								image=parent.black_button_image, highlightbackground='#afeeee', borderwidth=0)
-		pin_button2_window = self.create_window(275, 49, window=self.pin_button2)	# create a button at x, y
+		# create J2 pin buttons
+		j2 = 'j2'
+		self.j2_buttons = []
+		self.button_window = []
+		x_coord = 233	
+		y_coord = 90	
+		pin_count = 1
+		self.j2_buttons.append(0)	# pin numbers start at 1
+		
+		for i in range(20):
+			for j in range(2):
+				self.j2_buttons.append(tk.Button(self, command=lambda pin_count=pin_count: self.print_num(j2, pin_count), image=parent.black_button_image,
+										highlightbackground='#afeeee', borderwidth=0))
+				# skip button creation on unusable pins: 1, 2, 11, 36, 38
+				if (pin_count != 1 and pin_count != 2 and pin_count != 5 and pin_count != 11 and pin_count != 12 
+					and pin_count != 17 and pin_count != 21 and pin_count != 26 and pin_count != 32 and pin_count != 39 and pin_count != 40):	
+					self.create_window(x_coord, y_coord, window=self.j2_buttons[pin_count])
+				y_coord -= y_offset
+				pin_count += 1
+			x_coord += x_offset
+			y_coord = 90
+
+		# create J7 pin buttons
+		j7 = 'j7'
+		self.j7_buttons = []
+		x_coord = 233
+		y_coord = 135
+		pin_count = 1
+		self.j7_buttons.append(0)	# pin numbers start at 1
+
+		for i in range(20):
+			self.j7_buttons.append(tk.Button(self, command=lambda pin_count=pin_count: self.print_num(j7, pin_count), image=parent.black_button_image,
+								highlightbackground='#afeeee', borderwidth=0))
+			if (pin_count != 1 and pin_count != 4 and pin_count != 5 and pin_count != 9 and pin_count != 10 
+				and pin_count != 11 and pin_count != 12 and pin_count != 19 and pin_count != 20):
+				self.create_window(x_coord, y_coord, window=self.j7_buttons[pin_count])
+			pin_count += 1
+			x_coord += x_offset
+
+	def print_num(self, header, pin):
+		print(header, ' p', pin, sep='')
+
 
 class StatusBar(tk.Label):
 	def __init__(self, parent):
 		tk.Label.__init__(self, parent)
-		self.config(text="Test Status Bar", bd=1, relief=tk.SUNKEN, anchor=tk.W)	# bd = border, SUNKEN is style, anchored West
+		self.config(text="Test Status Bar", bd=1, relief=tk.SUNKEN, anchor='w')	# bd = border, SUNKEN is style, anchored West
 		self.pack(side=tk.BOTTOM, fill=tk.X)
+
 
 class PinOptions(tk.Toplevel):
 	def __init__(self, parent):
 		tk.Toplevel.__init__(self)
-
-        #""" Initialize the frame. """
-		self.grid()
-		self.create_GUI() 
-		self.title("GUI Panel")
-		self.geometry("200x100")
+		self.title("Pin Options")
+		self.geometry("200x160")
 		self.configure(bg="white")
 
+		# on/off buttons
+		p = tk.IntVar()
+		m = tk.IntVar()
+		self.on_button = tk.Radiobutton(self, text="On", bg='white', variable=p, value=1, command=parent.do_nothing)
+		self.on_button.pack(anchor='nw', padx=5, pady=5)
+		self.off_button = tk.Radiobutton(self, text="Off", bg='white', variable=p, value=0, command=parent.change_black)
+		self.off_button.pack(anchor='nw', padx=5, pady=5)
+		self.input_button = tk.Radiobutton(self, text="Input", bg='white', variable=m, value=1, command=parent.change_green)
+		self.input_button.pack(anchor='ne', padx=5, pady=5)
+		self.output_button = tk.Radiobutton(self, text="Output", bg='white', variable=m, value=0, command=parent.change_red)
+		self.output_button.pack(anchor='ne', padx=5, pady=5)
 
-	def create_GUI(self): 
-		frame1 = tk.LabelFrame(self, text="frame1", width=30, height=13, bd=5)
-		frame1.pack(side=RIGHT)
+		self.okay_button = tk.Button(self, text="Ok", command=self.destroy)
+		self.okay_button.pack(anchor='se', padx=5, pady=10)
 
-		self.button1= Button(frame1, text="On/Off", fg = "red", command= self.connectFunc)
-		self.button1.pack(side=LEFT)
-		answer = tk.messagebox.askquestion('I/O', 'Input?')
-		if answer == 'no':
-			answer = tk.messagebox.askquestion('I/O', 'Output?')
-		
-	def connectFunc(self):
-		print("nothing")
+	def set_input(self):
+		print("input")
+
+	def quit(self):
+		print("quit")
 
 panel = TestPanel()
 panel.mainloop()
