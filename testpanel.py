@@ -105,65 +105,70 @@ class PanelCanvas(tk.Canvas):
 		self.board_image = tk.PhotoImage(file = 'greatBLUE.png')
 		self.create_image(25, 5, image=self.board_image, anchor='nw')	# create an image (GreatFET) at position x, y on the canvas, anchored at the nw (top left) corner of the image
 
-		# create J1 pin buttons
+		self._init_j1_buttons(parent)
+		self._init_j2_buttons(parent)
+		self._init_j7_buttons(parent)
+
+	def _init_j1_buttons(self, parent):
 		j1 = 'j1'
-		self.j1_buttons = []
+		self.j1_buttons = [None]		# pin numbers start at 1
 		x_coord = 233
 		x_offset = 43	# pins are 43 pixels apart on the x axis
 		y_coord = 865
 		y_offset = 41 	# pins are 41 pixels apart on the y axis
-		pin_count = 1
-		self.j1_buttons.append(0)	# pin numbers start at 1
-		
+		pin_num = 1	
+		unclickable_pins = (1,2,11,36,38)
+
 		for i in range(20):
 			for j in range(2):
-				self.j1_buttons.append(tk.Button(self, command=lambda pin_count=pin_count: self.print_num(j1, pin_count), image=parent.black_button_image,
+				self.j1_buttons.append(tk.Button(self, command=lambda pin_num=pin_num: self.print_num(j1, pin_num), image=parent.black_button_image,
 									highlightbackground='#afeeee', borderwidth=0))
 				# skip button creation on unusable pins: 1, 2, 11, 36, 38
-				if (pin_count != 1 and pin_count != 2 and pin_count != 11 and pin_count != 36 and pin_count != 38):
-					self.create_window(x_coord, y_coord, window=self.j1_buttons[pin_count])
+
+				if pin_num not in unclickable_pins:
+					self.create_window(x_coord, y_coord, window=self.j1_buttons[pin_num])
 				y_coord -= y_offset
-				pin_count += 1
+				pin_num += 1
 			x_coord += x_offset
 			y_coord = 865
 
-		# create J2 pin buttons
+	def _init_j2_buttons(self, parent):
 		j2 = 'j2'
-		self.j2_buttons = []
-		self.button_window = []
+		self.j2_buttons = [None]			# pin numbers start at 1
 		x_coord = 233	
+		x_offset = 43	# pins are 43 pixels apart on the x axis
 		y_coord = 90	
-		pin_count = 1
-		self.j2_buttons.append(0)	# pin numbers start at 1
+		y_offset = 41 	# pins are 41 pixels apart on the y axis
+		pin_num = 1
+		unclickable_pins = (1,2,5,11,12,17,21,26,32,39,40)
 		
 		for i in range(20):
 			for j in range(2):
-				self.j2_buttons.append(tk.Button(self, command=lambda pin_count=pin_count: self.print_num(j2, pin_count), image=parent.black_button_image,
+				self.j2_buttons.append(tk.Button(self, command=lambda pin_num=pin_num: self.print_num(j2, pin_num), image=parent.black_button_image,
 										highlightbackground='#afeeee', borderwidth=0))
 				# skip button creation on unusable pins: 1, 2, 11, 36, 38
-				if (pin_count != 1 and pin_count != 2 and pin_count != 5 and pin_count != 11 and pin_count != 12 
-					and pin_count != 17 and pin_count != 21 and pin_count != 26 and pin_count != 32 and pin_count != 39 and pin_count != 40):	
-					self.create_window(x_coord, y_coord, window=self.j2_buttons[pin_count])
+				if pin_num not in unclickable_pins:	
+					self.create_window(x_coord, y_coord, window=self.j2_buttons[pin_num])
 				y_coord -= y_offset
-				pin_count += 1
+				pin_num += 1
 			x_coord += x_offset
 			y_coord = 90
 
-		# create J7 pin buttons
+	def _init_j7_buttons(self, parent):
 		j7 = 'j7'
-		self.j7_buttons = []
+		self.j7_buttons = [None]		# pin numbers start at 1
 		x_coord = 233
+		x_offset = 43	# pins are 43 pixels apart on the x axis
 		y_coord = 135
-		pin_count = 1
-		self.j7_buttons.append(0)	# pin numbers start at 1
+		pin_num = 1
+		unclickable_pins = (1, 4, 5, 9, 10 , 11, 12, 19, 20)
 
 		for i in range(20):
-			self.j7_buttons.append(tk.Button(self, command=lambda pin_count=pin_count: self.print_num(j7, pin_count), image=parent.black_button_image,
+			self.j7_buttons.append(tk.Button(self, command=lambda pin_num=pin_num: self.print_num(j7, pin_num), image=parent.black_button_image,
 								highlightbackground='#afeeee', borderwidth=0))
-			if (pin_count != 1 and pin_count != 4 and pin_count != 5 and pin_count != 9 and pin_count != 10 
-				and pin_count != 11 and pin_count != 12 and pin_count != 19 and pin_count != 20):
-				self.create_window(x_coord, y_coord, window=self.j7_buttons[pin_count])
-			pin_count += 1
+			if pin_num not in unclickable_pins:
+				self.create_window(x_coord, y_coord, window=self.j7_buttons[pin_num])
+			pin_num += 1
 			x_coord += x_offset
 
 	def print_num(self, header, pin):
