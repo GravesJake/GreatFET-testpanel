@@ -28,37 +28,64 @@ class TestPanel(tk.Tk):
 		self.canvas = PanelCanvas(self)
 		status = StatusBar(self)
 
-	def open_options(self):
-		options = PinOptions(self)
+	def open_options(self, port, pin):
+		self.options = PinOptionsWindow(self, port, pin)
 		
 	def do_nothing(self):
 		print("TestPanel do nothing")
 
+	def turn_on(self):
+		print("turn pin on")
+		self.options.input_button.config(state='normal'), 
+		self.options.output_button.config(state='normal')
+
 	def knight_rider(self):
 		gf = GreatFET()
 		gf.vendor_request_out(vendor_requests.HEARTBEAT_STOP)
-		gf.vendor_request_out(vendor_requests.REGISTER_GPIO, value=0, data=[14, 3, 1, 2, 13, 3, 12, 3])
+		gf.vendor_request_out(vendor_requests.GPIO_REGISTER, value=0, data=[3, 14, 2, 1, 3, 13, 3, 12])
 
 		def set_led(gf, lednum, state):
-		    gf.vendor_request_out(vendor_requests.WRITE_GPIO, data=[int(not(state)), lednum])
+		    gf.vendor_request_out(vendor_requests.GPIO_WRITE, data=[lednum, int(not(state))])
 
+		#while 1:
 		pattern = [0, 1, 2, 3, 2, 1, 0]
 		for led in pattern:
-		    set_led(gf, led, True)
-		    time.sleep(0.1)
-		    set_led(gf, led, False)
+			set_led(gf, led, True)
+			time.sleep(0.1)
+			set_led(gf, led, False)
 
-	def change_red(self):
-		print("change red")
-		self.canvas.pin_button1.config(image=self.red_button_image)
+	def set_output(self, port, pin):
+		print("set pin to output")
+		if port == 'j1':
+			self.canvas.j1_buttons[pin].config(image=self.red_button_image)
+		elif port == 'j2':
+			self.canvas.j2_buttons[pin].config(image=self.red_button_image)
+		elif port == 'j7':
+			self.canvas.j7_buttons[pin].config(image=self.red_button_image)
+		self.options.one_button.config(state='normal')
+		self.options.zero_button.config(state='normal')
 
-	def change_green(self):
-		print("change green")
-		self.canvas.pin_button1.config(image=self.green_button_image)
+	def set_input(self, port, pin):
+		print("set pin to input")
+		if port == 'j1':
+			self.canvas.j1_buttons[pin].config(image=self.green_button_image)
+		elif port == 'j2':
+			self.canvas.j2_buttons[pin].config(image=self.green_button_image)
+		elif port == 'j7':
+			self.canvas.j7_buttons[pin].config(image=self.green_button_image)
+		self.options.one_button.config(state='disabled')
+		self.options.zero_button.config(state='disabled')
 
-	def change_black(self):
-		print("change black")
-		self.canvas.pin_button1.config(image=self.black_button_image)
+	def turn_off(self, port, pin):
+		print("turn pin off")
+		if port == 'j1':
+			self.canvas.j1_buttons[pin].config(image=self.black_button_image)
+		elif port == 'j2':
+			self.canvas.j2_buttons[pin].config(image=self.black_button_image)
+		elif port == 'j7':
+			self.canvas.j7_buttons[pin].config(image=self.black_button_image)
+		self.options.input_button.config(state='disabled'), 
+		self.options.output_button.config(state='disabled')
 
 
 class PanelMenu(tk.Menu):
@@ -121,10 +148,8 @@ class PanelCanvas(tk.Canvas):
 
 		for i in range(20):
 			for j in range(2):
-				self.j1_buttons.append(tk.Button(self, command=lambda pin_num=pin_num: self.print_num(j1, pin_num), image=parent.black_button_image,
+				self.j1_buttons.append(tk.Button(self, command=lambda pin_num=pin_num: parent.open_options(j1, pin_num), image=parent.black_button_image,
 									highlightbackground='#afeeee', borderwidth=0))
-				# skip button creation on unusable pins: 1, 2, 11, 36, 38
-
 				if pin_num not in unclickable_pins:
 					self.create_window(x_coord, y_coord, window=self.j1_buttons[pin_num])
 				y_coord -= y_offset
@@ -144,9 +169,8 @@ class PanelCanvas(tk.Canvas):
 		
 		for i in range(20):
 			for j in range(2):
-				self.j2_buttons.append(tk.Button(self, command=lambda pin_num=pin_num: self.print_num(j2, pin_num), image=parent.black_button_image,
+				self.j2_buttons.append(tk.Button(self, command=lambda pin_num=pin_num: parent.open_options(j2, pin_num), image=parent.black_button_image,
 										highlightbackground='#afeeee', borderwidth=0))
-				# skip button creation on unusable pins: 1, 2, 11, 36, 38
 				if pin_num not in unclickable_pins:	
 					self.create_window(x_coord, y_coord, window=self.j2_buttons[pin_num])
 				y_coord -= y_offset
@@ -164,7 +188,7 @@ class PanelCanvas(tk.Canvas):
 		unclickable_pins = (1, 4, 5, 9, 10 , 11, 12, 19, 20)
 
 		for i in range(20):
-			self.j7_buttons.append(tk.Button(self, command=lambda pin_num=pin_num: self.print_num(j7, pin_num), image=parent.black_button_image,
+			self.j7_buttons.append(tk.Button(self, command=lambda pin_num=pin_num: parent.open_options(j7, pin_num), image=parent.black_button_image,
 								highlightbackground='#afeeee', borderwidth=0))
 			if pin_num not in unclickable_pins:
 				self.create_window(x_coord, y_coord, window=self.j7_buttons[pin_num])
@@ -182,27 +206,48 @@ class StatusBar(tk.Label):
 		self.pack(side=tk.BOTTOM, fill=tk.X)
 
 
-class PinOptions(tk.Toplevel):
-	def __init__(self, parent):
+class PinOptionsWindow(tk.Toplevel):
+	def __init__(self, parent, port, pin):
 		tk.Toplevel.__init__(self)
 		self.title("Pin Options")
-		self.geometry("200x160")
+		self.geometry("180x110")
 		self.configure(bg="white")
 
 		# on/off buttons
-		p = tk.IntVar()
-		m = tk.IntVar()
-		self.on_button = tk.Radiobutton(self, text="On", bg='white', variable=p, value=1, command=parent.do_nothing)
-		self.on_button.pack(anchor='nw', padx=5, pady=5)
-		self.off_button = tk.Radiobutton(self, text="Off", bg='white', variable=p, value=0, command=parent.change_black)
-		self.off_button.pack(anchor='nw', padx=5, pady=5)
-		self.input_button = tk.Radiobutton(self, text="Input", bg='white', variable=m, value=1, command=parent.change_green)
-		self.input_button.pack(anchor='ne', padx=5, pady=5)
-		self.output_button = tk.Radiobutton(self, text="Output", bg='white', variable=m, value=0, command=parent.change_red)
-		self.output_button.pack(anchor='ne', padx=5, pady=5)
+		p = tk.IntVar()	# power
+		m = tk.IntVar()	# mode
+		v = tk.IntVar() # i/o value
 
+		# create pin options buttons
+		self.on_button = tk.Radiobutton(self, text="On", bg='white', variable=p, value=1, 
+										command=lambda: parent.turn_on())
+		
+		self.off_button = tk.Radiobutton(self, text="Off", bg='white', variable=p, value=0, 
+											command=lambda: parent.turn_off(port, pin))
+		
+		self.input_button = tk.Radiobutton(self, text="Input", bg='white', state='disabled', variable=m, 
+											value=1, command=lambda: parent.set_input(port, pin))
+		
+		self.output_button = tk.Radiobutton(self, text="Output", bg='white', state='disabled', variable=m, 
+											value=0, command=lambda: parent.set_output(port, pin))
+		
+		self.one_button = tk.Radiobutton(self, text="1", bg='white', state='disabled', variable=v, value=1, 
+											command=lambda: parent.do_nothing())
+		
+		self.zero_button = tk.Radiobutton(self, text="0", bg='white', state='disabled', variable=v, value=0, 
+											command=lambda: parent.do_nothing())
+		
 		self.okay_button = tk.Button(self, text="Ok", command=self.destroy)
-		self.okay_button.pack(anchor='se', padx=5, pady=10)
+
+		# place buttons on pin options window
+		self.on_button.grid(row=0, column=0)
+		self.off_button.grid(row=0, column=1)
+		self.input_button.grid(row=1, column=0, padx=5, pady=5)
+		self.output_button.grid(row=1, column=1, padx=10)
+		self.one_button.grid(row=2, column=0)
+		self.zero_button.grid(row=2, column=1)
+		self.okay_button.grid(row=3, column=0, pady=5)
+
 
 	def set_input(self):
 		print("input")
