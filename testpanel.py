@@ -14,13 +14,13 @@ from greatfet.protocol import vendor_requests
 class TestPanel(tk.Tk):
 	def __init__(self):
 		tk.Tk.__init__(self)
-		self.black_button_image = tk.PhotoImage(file='black_button.png')
-		self.green_button_image = tk.PhotoImage(file='green_button.png')
-		self.green_zero_button_image = tk.PhotoImage(file='green_zero_button.png')
-		self.green_one_button_image = tk.PhotoImage(file='green_one_button.png')
-		self.red_button_image = tk.PhotoImage(file='red_button.png')
-		self.red_zero_button_image = tk.PhotoImage(file='red_zero_button.png')
-		self.red_one_button_image = tk.PhotoImage(file='red_one_button.png')
+		self.black_button_image = tk.PhotoImage(file='icons/black_button.png')
+		self.green_button_image = tk.PhotoImage(file='icons/green_button.png')
+		self.green_zero_button_image = tk.PhotoImage(file='icons/green_zero_button.png')
+		self.green_one_button_image = tk.PhotoImage(file='icons/green_one_button.png')
+		self.red_button_image = tk.PhotoImage(file='icons/red_button.png')
+		self.red_zero_button_image = tk.PhotoImage(file='icons/red_zero_button.png')
+		self.red_one_button_image = tk.PhotoImage(file='icons/red_one_button.png')
 
 		# initialize the window
 		self.wm_title("GreatFET Test Panel")
@@ -202,7 +202,7 @@ class PanelCanvas(tk.Canvas):
 		tk.Canvas.__init__(self, parent)
 		self.config(width=1250, height=910, bg='white')
 		self.pack()
-		self.board_image = tk.PhotoImage(file = 'greatBLUE.png')
+		self.board_image = tk.PhotoImage(file = 'icons/greatBLUE.png')
 		self.create_image(25, 5, image=self.board_image, anchor='nw')	# create an image (GreatFET) at position x, y on the canvas, anchored at the nw (top left) corner of the image
 
 		self._init_j1_buttons(parent)
