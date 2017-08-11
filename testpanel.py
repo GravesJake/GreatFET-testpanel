@@ -33,7 +33,7 @@ class TestPanel(tk.Tk):
 		self.config(menu=menubar)
 		toolbar = PanelToolbar(self)
 		self.canvas = PanelCanvas(self)
-		status = StatusBar(self)
+		self.status = StatusBar(self)
 
 		self.j1_input_pins = {}		# used for board polling
 		self.j2_input_pins = {}
@@ -45,12 +45,12 @@ class TestPanel(tk.Tk):
 		self.options = PinOptionsWindow(self, port, pin)
 
 	def turn_on(self, port, pin):
-		print("turn pin on")
+		self.status.config(text="Turn Pin On")
 		self.options.input_button.config(state='normal'), 
 		self.options.output_button.config(state='normal')
 
 	def turn_off(self, port, pin):
-		print("turn pin off")
+		self.status.config(text="Turn Pin Off")
 		self.canvas_buttons = self.canvas.buttons[port]
 		self.canvas_buttons[pin].config(image=self.black_button_image)
 
@@ -58,7 +58,7 @@ class TestPanel(tk.Tk):
 		self.options.output_button.config(state='disabled')
 
 	def set_input(self, port, pin):
-		print("set pin to input")
+		self.status.config(text="Set Pin to Input")
 		pin_attr = "P%d" % pin
 		if port in self.ports:	# look for J1, J2, or J7 in globals all at once instead of checking individually
 			# this will avoid the need to have three separate button mappings (one for each port)
@@ -95,7 +95,7 @@ class TestPanel(tk.Tk):
 		self.options.zero_button.config(state='disabled')
 
 	def set_output(self, port, pin):
-		print("set pin to output")
+		self.status.config(text="Set Pin to Output")
 		pin_attr = "P%d" % pin
 		if port in self.ports:
 			self.canvas_buttons = self.canvas.buttons[port]
@@ -123,7 +123,7 @@ class TestPanel(tk.Tk):
 		self.options.zero_button.config(state='normal')
 
 	def set_high(self, port, pin):
-		print("set output high")
+		self.status.config(text="Set Output Pin to High")
 		pin_attr = "P%d" % pin
 		obj = self.ports[port]
 		if hasattr(obj, pin_attr):
@@ -133,7 +133,7 @@ class TestPanel(tk.Tk):
 
 	def set_low(self, port, pin):
 		'''port is a string like "J1", pin is an int like 5 for P5'''
-		print("set output low")
+		self.status.config(text="Set Output Pin to Low")
 		pin_attr = "P%d" % pin
 		
 		self.canvas_buttons = self.canvas.buttons[port]
@@ -151,9 +151,9 @@ class TestPanel(tk.Tk):
 			gf_j1_pin = getattr(J1, pin_attr)
 			state = self.gf.gpio.input(gf_j1_pin)	# read the state of the pin, low or high
 			if state:
-				self.canvas_buttons[pin].config(image=self.green_one_button_image)		# set image high
+				self.canvas.j1_buttons[pin].config(image=self.green_one_button_image)		# set image high
 			else:
-				self.canvas_buttons[pin].config(image=self.green_zero_button_image)		# set image low
+				self.canvas.j1_buttons[pin].config(image=self.green_zero_button_image)		# set image low
 
 		for pin in j2_pins:
 			pin_num = int(pin)
@@ -161,9 +161,9 @@ class TestPanel(tk.Tk):
 			gf_j2_pin = getattr(J2, pin_attr)
 			state = self.gf.gpio.input(gf_j2_pin) 	# read the state of the pin, low or high
 			if state:
-				self.canvas_buttons[pin].config(image=self.green_one_button_image)		# set image high
+				self.canvas.j2_buttons[pin].config(image=self.green_one_button_image)		# set image high
 			else:
-				self.canvas_buttons[pin].config(image=self.green_zero_button_image)		# set image low
+				self.canvas.j2_buttons[pin].config(image=self.green_zero_button_image)		# set image low
 
 		for pin in j7_pins:
 			pin_num = int(pin)
@@ -171,25 +171,27 @@ class TestPanel(tk.Tk):
 			gf_j7_pin = getattr(J7, pin_attr)
 			state = self.gf.gpio.input(gf_j7_pin)	# read the state of the pin, low or high
 			if state:
-				self.canvas_buttons[pin].config(image=self.green_one_button_image)		# set image high
+				self.canvas.j7_buttons[pin].config(image=self.green_one_button_image)		# set image high
 			else:
-				self.canvas_buttons[pin].config(image=self.green_zero_button_image)		# set image low
+				self.canvas.j7_buttons[pin].config(image=self.green_zero_button_image)		# set image low
 
 		self.after(100, self.get_state, j1_pins, j2_pins, j7_pins)
 
 	def knight_rider(self):
-		gf = GreatFET()
-		gf.vendor_request_out(vendor_requests.HEARTBEAT_STOP)
-		gf.vendor_request_out(vendor_requests.GPIO_REGISTER, value=0, data=[3, 14, 2, 1, 3, 13, 3, 12])
+		self.status.config(text="David Hasselhoff")
+		led1 = (3, 14)
+		led2 = (2, 1)
+		led3 = (3, 13)
+		led4 = (3, 12)
 
-		def set_led(gf, lednum, state):
-		    gf.vendor_request_out(vendor_requests.GPIO_WRITE, data=[lednum, int(not(state))])
+		for led in (led1, led2, led3, led4):
+			self.gf.gpio.setup(led, Directions.OUT)
 
-		pattern = [0, 1, 2, 3, 2, 1, 0]
+		pattern = (led1, led2, led3, led4, led3, led2, led1)
 		for led in pattern:
-			set_led(gf, led, True)
+			self.gf.gpio.output(led, False) # on
 			time.sleep(0.1)
-			set_led(gf, led, False)
+			self.gf.gpio.output(led, True) # on
 
 	def do_nothing(self):
 		print("TestPanel do nothing")
@@ -200,14 +202,11 @@ class PanelMenu(tk.Menu):
 		tk.Menu.__init__(self, parent)
 		sub_menu = tk.Menu(self, tearoff=0)							# tearoff removes the dotted line "button" located at 0
 		self.add_cascade(label="File", menu=sub_menu) 				# sub_menu will appear as the dropdown under File
-		sub_menu.add_command(label="New Project", command=parent.do_nothing)
-		sub_menu.add_command(label="New", command=parent.do_nothing)
 		sub_menu.add_separator()
 		sub_menu.add_command(label="Exit", command=quit)
 
 		edit_menu = tk.Menu(self, tearoff=0)
 		self.add_cascade(label="Edit", menu=edit_menu)
-		edit_menu.add_command(label="Redo", command=parent.do_nothing)
 
 	def quit(self):
 		sys.exit(0)
@@ -216,18 +215,9 @@ class PanelMenu(tk.Menu):
 class PanelToolbar(tk.Frame):
 	def __init__(self, parent):
 		tk.Frame.__init__(self, parent)
-		question_button = tk.Button(self, text="Test Toolbar Question Button", command=self.question_func)
-		question_button.pack(side=tk.LEFT, padx=2, pady=2)			# pad 2 pixels in the x and y direction on the button
-		print_button = tk.Button(self, text="Knight Rider", command=parent.knight_rider)
-		print_button.pack(side=tk.LEFT, padx=2, pady=2)
+		knight_rider_button = tk.Button(self, text="Knight Rider", command=parent.knight_rider)
+		knight_rider_button.pack(side=tk.LEFT, padx=2, pady=2)
 		self.pack(side=tk.TOP, fill=tk.X)
-
-	def question_func(self):
-		answer = tk.messagebox.askquestion('Question 1', 'Is your greatFET plugged in?')
-		if answer == 'yes':
-			print("congratulations")
-		else:
-			print("you should probably plug it in")
 
 
 class PanelCanvas(tk.Canvas):
@@ -292,7 +282,7 @@ class PanelCanvas(tk.Canvas):
 		x_offset = 43	# pins are 43 pixels apart on the x axis
 		y_coord = 135
 		pin_num = 1
-		unclickable_pins = (1, 4, 5, 9, 10 , 11, 12, 19, 20)
+		unclickable_pins = (1,4,5,9,10,11,12,19,20)
 
 		for i in range(20):
 			self.j7_buttons.append(tk.Button(self, command=lambda pin_num=pin_num: parent.open_options(j7, pin_num), image=parent.black_button_image,
@@ -314,15 +304,22 @@ class PanelCanvas(tk.Canvas):
 class StatusBar(tk.Label):
 	def __init__(self, parent):
 		tk.Label.__init__(self, parent)
-		self.config(text="Test Status Bar", bd=1, relief=tk.SUNKEN, anchor='w')	# bd = border, SUNKEN is style, anchored West
+		self.config(text="", bd=1, relief=tk.SUNKEN, anchor='w')	# bd = border, SUNKEN is style, anchored West
 		self.pack(side=tk.BOTTOM, fill=tk.X)
 
 
 class PinOptionsWindow(tk.Toplevel):
 	def __init__(self, parent, port, pin):
 		tk.Toplevel.__init__(self)
+		x = parent.winfo_x()
+		y = parent.winfo_y()
+		x_offset = 20
+		y_offset = 100
+		w = 140
+		h = 110
+
 		self.title("Pin Options")
-		self.geometry("140x110")
+		self.geometry("%dx%d+%d+%d" % (w, h, x + x_offset, y + y_offset)) # set size and position of window
 		self.resizable(width=False, height=False)
 		self.grab_set()	# prevents the main window from opening more windows while this one is open
 
@@ -362,5 +359,5 @@ class PinOptionsWindow(tk.Toplevel):
 		self.okay_button.grid(row=3, column=1, pady=5, sticky='se')
 
 panel = TestPanel()
-panel.after(100, panel.get_state(panel.j1_input_pins, panel.j2_input_pins, panel.j7_input_pins))
+panel.after(100, panel.get_state(panel.j1_input_pins, panel.j2_input_pins, panel.j7_input_pins)) # keep window updated based on GreatFET physical pins
 panel.mainloop()
