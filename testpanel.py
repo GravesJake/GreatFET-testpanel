@@ -3,6 +3,7 @@
 import sys
 import tkinter as tk
 from tkinter.messagebox import showinfo
+from tkinter import filedialog
 from PIL import Image, ImageTk
 
 # GreatFET 
@@ -48,7 +49,7 @@ class TestPanel(tk.Tk):
 
 		self.gf = GreatFET()
 		self._init_board()
-		self.save_project()
+		#self.save_project()
 
 	def _init_board(self):
 		print('initializing board')
@@ -259,91 +260,99 @@ class TestPanel(tk.Tk):
 		self.after(100, self.get_state, j1_pins, j2_pins, j7_pins)
 
 	def save_project(self):
-		with open('boardstate.txt', 'w') as f:
-			# input pins
-			for pin in self.j1_input_pins:
-				if pin < 10:								# add 0 to pins (01, 02,..) less than 10 to keep string length the same
-					print("J1P%d%di" % (0, pin))
-					f.write("J1P%d%di" % (0, pin)+'\n')
-				else:
-					print("J1P%di" % pin)
-					f.write("J1P%di" % pin+'\n')
+		#with open('oldsave.txt', 'w') as f:
+		f = filedialog.asksaveasfile(mode='w', defaultextension='.txt')
+		if f is None:
+			return
+		# input pins
+		for pin in self.j1_input_pins:
+			if pin < 10:								# add 0 to pins (01, 02,..) less than 10 to keep string length the same
+				print("J1P%d%di" % (0, pin))
+				f.write("J1P%d%di" % (0, pin)+'\n')
+			else:
+				print("J1P%di" % pin)
+				f.write("J1P%di" % pin+'\n')
 
-			for pin in self.j2_input_pins:
-				if pin < 10:								# add 0 to pins (01, 02,..) less than 10 to keep string length the same
-					print("J2P%d%di" % (0, pin))
-					f.write("J2P%d%di" % (0, pin)+'\n')
-				else:
-					print("J2P%di" % pin)
-					f.write("J2P%di" % pin+'\n')
+		for pin in self.j2_input_pins:
+			if pin < 10:								# add 0 to pins (01, 02,..) less than 10 to keep string length the same
+				print("J2P%d%di" % (0, pin))
+				f.write("J2P%d%di" % (0, pin)+'\n')
+			else:
+				print("J2P%di" % pin)
+				f.write("J2P%di" % pin+'\n')
 
-			for pin in self.j7_input_pins:
-				if pin < 10:								# add 0 to pins (01, 02,..) less than 10 to keep string length the same
-					print("J7P%d%di" % (0, pin))
-					f.write("J7P%d%di" % (0, pin)+'\n')
-				else:
-					print("J7P%di" % pin)
-					f.write("J7P%di" % pin+'\n')
+		for pin in self.j7_input_pins:
+			if pin < 10:								# add 0 to pins (01, 02,..) less than 10 to keep string length the same
+				print("J7P%d%di" % (0, pin))
+				f.write("J7P%d%di" % (0, pin)+'\n')
+			else:
+				print("J7P%di" % pin)
+				f.write("J7P%di" % pin+'\n')
 
-			# output pins
-			for pin in self.j1_output_pins:
-				if pin < 10:								# add 0 to pins (01, 02,..) less than 10 to keep string length the same
-					print("J1P%d%do%d" % (0, pin, self.j1_output_pins[pin]))
-					f.write("J1P%d%do%d" % (0, pin, self.j1_output_pins[pin])+'\n')
-				else:
-					print("J1P%do%d" % (pin, self.j1_output_pins[pin]))
-					f.write("J1P%do%d" % (pin, self.j1_output_pins[pin])+'\n')
+		# output pins
+		for pin in self.j1_output_pins:
+			if pin < 10:								# add 0 to pins (01, 02,..) less than 10 to keep string length the same
+				print("J1P%d%do%d" % (0, pin, self.j1_output_pins[pin]))
+				f.write("J1P%d%do%d" % (0, pin, self.j1_output_pins[pin])+'\n')
+			else:
+				print("J1P%do%d" % (pin, self.j1_output_pins[pin]))
+				f.write("J1P%do%d" % (pin, self.j1_output_pins[pin])+'\n')
 
-			for pin in self.j2_output_pins:
-				if pin < 10:								# add 0 to pins (01, 02,..) less than 10 to keep string length the same
-					print("J2P%d%do%d" % (0, pin, self.j2_output_pins[pin]))
-					f.write("J2P%d%do%d" % (0, pin, self.j2_output_pins[pin])+'\n')
-				else:
-					print("J2P%do%d" % (pin, self.j2_output_pins[pin]))
-					f.write("J2P%do%d" % (pin, self.j2_output_pins[pin])+'\n')
+		for pin in self.j2_output_pins:
+			if pin < 10:								# add 0 to pins (01, 02,..) less than 10 to keep string length the same
+				print("J2P%d%do%d" % (0, pin, self.j2_output_pins[pin]))
+				f.write("J2P%d%do%d" % (0, pin, self.j2_output_pins[pin])+'\n')
+			else:
+				print("J2P%do%d" % (pin, self.j2_output_pins[pin]))
+				f.write("J2P%do%d" % (pin, self.j2_output_pins[pin])+'\n')
 
-			for pin in self.j7_output_pins:
-				if pin < 10:								# add 0 to pins (01, 02,..) less than 10 to keep string length the same
-					print("J7P%d%do%d" % (0, pin, self.j7_output_pins[pin]))
-					f.write("J7P%d%do%d" % (0, pin, self.j7_output_pins[pin])+'\n')
-				else:
-					print("J7P%do%d" % (pin, self.j7_output_pins[pin]))
-					f.write("J7P%do%d" % (pin, self.j7_output_pins[pin])+'\n')
+		for pin in self.j7_output_pins:
+			if pin < 10:								# add 0 to pins (01, 02,..) less than 10 to keep string length the same
+				print("J7P%d%do%d" % (0, pin, self.j7_output_pins[pin]))
+				f.write("J7P%d%do%d" % (0, pin, self.j7_output_pins[pin])+'\n')
+			else:
+				print("J7P%do%d" % (pin, self.j7_output_pins[pin]))
+				f.write("J7P%do%d" % (pin, self.j7_output_pins[pin])+'\n')
+
+		f.close()
 
 	def load_project(self):
-		with open('boardstate.txt', 'r') as f:
-			for line in f:
-				pin_line = line
-				if pin_line.endswith('\n'):
-					pin_line = pin_line[:-1]
-				print('pin_line:', pin_line)
-				port = pin_line[:2]
-				print('port: ', port)
+		#with open('boardstate.txt', 'r') as f:
+		f = filedialog.askopenfile(initialdir = "/GreatFET-testpanel",title = "Select File",filetypes = (("text files","*.txt"),("all files","*.*")))
+		for line in f:
+			pin_line = line
+			if pin_line.endswith('\n'):
+				pin_line = pin_line[:-1]
+			print('pin_line:', pin_line)
+			port = pin_line[:2]
+			print('port: ', port)
 
-				if len(pin_line) == 6:					# input mode has 6 characters
-					print('mode is input')
-					pin = pin_line[3:-1]
-					if pin.startswith('0'):
-						pin = pin[1:]
-					pin = int(pin)
-					print('pin i: %d\n' % pin)
-					self.set_input(port, pin)
-				elif len(pin_line) == 7:				# output has 7 characters (extra for high/low)
-					print('mode is output')
-					pin = pin_line[3:-2]
-					if pin.startswith('0'):
-						pin = pin[1:]
-					pin = int(pin)
-					print('pin o: %d\n' % pin)
-					self.state = pin_line[6:]
-					self.set_output(port, pin)
+			if len(pin_line) == 6:					# input mode has 6 characters
+				print('mode is input')
+				pin = pin_line[3:-1]
+				if pin.startswith('0'):
+					pin = pin[1:]
+				pin = int(pin)
+				print('pin i: %d\n' % pin)
+				self.set_input(port, pin)
+			elif len(pin_line) == 7:				# output has 7 characters (extra for high/low)
+				print('mode is output')
+				pin = pin_line[3:-2]
+				if pin.startswith('0'):
+					pin = pin[1:]
+				pin = int(pin)
+				print('pin o: %d\n' % pin)
+				self.state = pin_line[6:]
+				self.set_output(port, pin)
 
-					if self.state == '1':
-						self.set_high(port, pin)
-					else:
-						self.set_low(port, pin)
+				if self.state == '1':
+					self.set_high(port, pin)
 				else:
-					print('board state file contains invalid data')
+					self.set_low(port, pin)
+			else:
+				print('board state file contains invalid data')
+
+		f.close()
 
 	def knight_rider(self):
 			self.status.config(text="David Hasselhoff")
