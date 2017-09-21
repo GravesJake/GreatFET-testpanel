@@ -2,19 +2,17 @@
 
 import sys
 import tkinter as tk
-from tkinter.messagebox import showinfo
 from tkinter import filedialog
+from tkinter.tix import *
+from tkinter.messagebox import showinfo
+
 from PIL import Image, ImageTk
 
-# GreatFET 
-import time
-from greatfet import GreatFET
-from greatfet.peripherals.gpio import J1, J2, J7, Directions
-from greatfet.protocol import vendor_requests
+import hardware
 
 class TestPanel(tk.Tk):
 	def __init__(self):
-		self.ports = {'J1': J1, 'J2': J2, 'J7': J7}
+		self.ports = {'J1': hardware.J1, 'J2': hardware.J2, 'J7': hardware.J7}
 
 		tk.Tk.__init__(self)
 		self.black_button_image = tk.PhotoImage(file='icons/black_button.png')
@@ -29,15 +27,16 @@ class TestPanel(tk.Tk):
 		w = 1250
 		h = 960
 		self.wm_title("GreatFET Test Panel")		
-		self.title("Pin Options")
 		self.geometry("%dx%d+%d+%d" % (w, h, 0, 0)) # set size and position of window
-		self.resizable(width=False, height=False)
+		self.resizable(width=True, height=True)
 
 		menubar = PanelMenu(self)
 		self.config(menu=menubar)
 		toolbar = PanelToolbar(self)
 		self.canvas = PanelCanvas(self)
 		self.status = StatusBar(self)
+
+		self.loaded_from_file = False
 
 		self.j1_input_pins = {}		# used for board polling
 		self.j2_input_pins = {}
@@ -47,190 +46,74 @@ class TestPanel(tk.Tk):
 		self.j2_output_pins = {}
 		self.j7_output_pins = {}
 
-		self.gf = GreatFET()
-		self._init_board()
-		#self.save_project()
-
-	def _init_board(self):
-		print('initializing board')
-		j1_pins = [pin for pin in dir(J1) if pin.startswith("P")]
-		j2_pins = [pin for pin in dir(J2) if pin.startswith("P")]
-		j7_pins = [pin for pin in dir(J7) if pin.startswith("P")]
-
-		for pin in j1_pins:
-			pin_str = ''.join(ch for ch in pin if ch.isdigit())
-			pin_num = int(pin_str)
-			gf_pin = getattr(J1, pin)
-			self.gf.gpio.setup(gf_pin, Directions.IN)	# set the corresponding pin to input
-			self.state = self.gf.gpio.input(gf_pin)			# read the state of the pin, low or high
-			self.j1_input_pins[pin_num] = self.state 			# store input pins for polling
-
-		for pin in j2_pins:
-			pin_str = ''.join(ch for ch in pin if ch.isdigit())
-			pin_num = int(pin_str)
-			gf_pin = getattr(J2, pin)
-			self.gf.gpio.setup(gf_pin, Directions.IN)	# set the corresponding pin to input
-			state = self.gf.gpio.input(gf_pin)			# read the state of the pin, low or high
-			self.j2_input_pins[pin_num] = self.state 			# store input pins for polling
-
-		for pin in j7_pins:
-			pin_str = ''.join(ch for ch in pin if ch.isdigit())
-			pin_num = int(pin_str)
-			gf_pin = getattr(J7, pin)
-			self.gf.gpio.setup(gf_pin, Directions.IN)	# set the corresponding pin to input
-			self.state = self.gf.gpio.input(gf_pin)			# read the state of the pin, low or high
-			self.j7_input_pins[pin_num] = self.state 			# store input pins for polling
+		self.gf = hardware.GreatFET()	
+		hardware._init_board(self)
 
 	def open_options(self, port, pin):
+		print("pin: ", pin)
 		self.options = PinOptionsWindow(self, port, pin)
 
-	def turn_on(self, port, pin):
-		self.status.config(text="Turn Pin On")
-		self.options.input_button.config(state='normal'),
-		self.options.output_button.config(state='normal')
-
-	def turn_off(self, port, pin):
-		self.status.config(text="Turn Pin Off")
-		self.canvas_buttons = self.canvas.buttons[port]
-		self.canvas_buttons[pin].config(image=self.black_button_image)
-
-		self.options.input_button.config(state='disabled'), 
-		self.options.output_button.config(state='disabled')
-
 	def set_input(self, port, pin):
+		self.pin_state = hardware.set_greatfet_input(self, port, pin)	# configure board
+		self.set_input_image(port, pin)									# update UI
+
+	def set_input_image(self, port, pin):
 		self.status.config(text="%s Pin %d set to Input" % (port, pin))
-		pin_attr = "P%d" % pin
 		if port in self.ports:	# look for J1, J2, or J7 in globals all at once instead of checking individually
-			# this will avoid the need to have three separate button mappings (one for each port)
+	 		# this will avoid the need to have three separate button mappings (one for each port)
 			self.canvas_buttons = self.canvas.buttons[port]
 			self.canvas_buttons[pin].config(image=self.green_button_image)
 
-			if port == 'J1' and hasattr(J1, pin_attr):		# look for the pin in J1
-				if pin not in self.j1_input_pins:
-					gf_pin = getattr(J1, pin_attr)
-					self.gf.gpio.setup(gf_pin, Directions.IN)	# set the corresponding pin to input
-					self.state = self.gf.gpio.input(gf_pin)			# read the state of the pin, low or high
-					self.j1_input_pins[pin] = self.state 			# store input pins for polling
-
-			elif port == 'J2' and hasattr(J2, pin_attr):
-				if pin not in self.j2_input_pins:
-					gf_pin = getattr(J2, pin_attr)
-					self.gf.gpio.setup(gf_pin, Directions.IN)	# set the corresponding pin to input
-					self.state = self.gf.gpio.input(gf_pin)			# read the state of the pin, low or high
-					self.j2_input_pins[pin] = self.state 			# store input pins for polling
-
-			elif port == 'J7' and hasattr(J7, pin_attr):
-				if pin not in self.j7_input_pins:
-					gf_pin = getattr(J7, pin_attr)
-					self.gf.gpio.setup(gf_pin, Directions.IN)	# set the corresponding pin to input
-					self.state = self.gf.gpio.input(gf_pin)			# read the state of the pin, low or high
-					self.j7_input_pins[pin] = self.state 			# store input pins for polling
-
-			if self.state:
+			if self.pin_state: 		
 				self.canvas_buttons[pin].config(image=self.green_one_button_image)	# set image high
 			else:
 				self.canvas_buttons[pin].config(image=self.green_zero_button_image)		# set image low
 
-		#self.options.one_button.config(state='disabled')
-		#self.options.zero_button.config(state='disabled')
+		# this doesn't need to happen when configuring pins from file so check for that
+		if self.loaded_from_file is False:
+			print("testpanel.open_options: self.loaded_from_file is False")
+			self.options.one_button.config(state='disabled')
+			self.options.zero_button.config(state='disabled')
+
 
 	def set_output(self, port, pin):
+		hardware.set_greatfet_output(self, port, pin)					# configure board
+		self.set_output_image(port, pin)								# update UI
+
+	def set_output_image(self, port, pin):
 		self.status.config(text="%s Pin %d set to Output" % (port, pin))
-		pin_attr = "P%d" % pin
-		if port in self.ports:
-			self.canvas_buttons = self.canvas.buttons[port]
-
-			if port == 'J1' and hasattr(J1, pin_attr):		# look for the pin in J1
-				gf_pin = getattr(J1, pin_attr)
-				self.gf.gpio.setup(gf_pin, Directions.OUT)	# set the corresponding pin to output
-				if pin in self.j1_input_pins:
-					self.j1_input_pins.pop(pin)		# remove pin from tracked input pins to avoid trying to read an output pin
-
-			elif port == 'J2' and hasattr(J2, pin_attr):
-				gf_pin = getattr(J2, pin_attr)
-				self.gf.gpio.setup(gf_pin, Directions.OUT)	# set the corresponding pin to output
-				if pin in self.j2_input_pins:
-					self.j2_input_pins.pop(pin)		# remove pin from tracked input pins to avoid trying to read an output pin
-
-			elif port == 'J7' and hasattr(J7, pin_attr):
-				gf_pin = getattr(J7, pin_attr)
-				self.gf.gpio.setup(gf_pin, Directions.OUT)	# set the corresponding pin to output
-				if pin in self.j7_input_pins:
-					self.j7_input_pins.pop(pin)		# remove pin from tracked input pins to avoid trying to read an output pin
-
+		self.canvas_buttons = self.canvas.buttons[port]
 		self.canvas_buttons[pin].config(image=self.red_button_image)	# set image to output
-		#self.options.one_button.config(state='normal')
-		#self.options.zero_button.config(state='normal')
+
+		# this doesn't need to happen when configuring pins from file
+		if self.loaded_from_file is False:
+			self.options.one_button.config(state='normal')
+			self.options.zero_button.config(state='normal')
 
 	def set_high(self, port, pin):
+		hardware.set_greatfet_high(self, port, pin)
+		self.set_high_image(port, pin)
+
+	def set_high_image(self, port, pin):
 		self.status.config(text="%s Output Pin %d set to High" % (port, pin))
-		pin_attr = "P%d" % pin
-		# obj = self.ports[port]
-		# if hasattr(obj, pin_attr):
-		# 	gf_pin = getattr(obj, pin_attr)
-		# 	self.gf.gpio.output(gf_pin, 1)	# set the corresponding pin's output to high
-		# 	self.canvas_buttons[pin].config(image=self.red_one_button_image)	# set image high
-		if port == 'J1' and hasattr(J1, pin_attr):
-			gf_j1_pin = getattr(J1, pin_attr)
-			self.gf.gpio.output(gf_j1_pin, 1)	# set the corresponding pin's output to high
-			self.canvas.j1_buttons[pin].config(image=self.red_one_button_image)	# set image high
-			self.state = 1
-			self.j1_output_pins[pin] = self.state 			# store input pins for polling
-
-		if port == 'J2' and hasattr(J2, pin_attr):
-			gf_j2_pin = getattr(J2, pin_attr)
-			self.gf.gpio.output(gf_j2_pin, 1)	# set the corresponding pin's output to high
-			self.canvas.j2_buttons[pin].config(image=self.red_one_button_image)	# set image high
-			self.state = 1
-			self.j2_output_pins[pin] = self.state 			# store input pins for polling
-
-		if port == 'J7' and hasattr(J7, pin_attr):
-			gf_j7_pin = getattr(J7, pin_attr)
-			self.gf.gpio.output(gf_j7_pin, 1)	# set the corresponding pin's output to high
-			self.canvas.j7_buttons[pin].config(image=self.red_one_button_image)	# set image high
-			self.state = 1
-			self.j7_output_pins[pin] = self.state 			# store input pins for polling
+		self.canvas_buttons = self.canvas.buttons[port]
+		self.canvas_buttons[pin].config(image=self.red_one_button_image)	# set image high
 
 	def set_low(self, port, pin):
+		hardware.set_greatfet_low(self, port, pin)
+		self.set_low_image(port, pin)
+
+	def set_low_image(self, port, pin):
 		'''port is a string like "J1", pin is an int like 5 for P5'''
 		self.status.config(text="%s Output Pin %d set to Low" % (port, pin))
-		pin_attr = "P%d" % pin
-		
-		''' this was for avoiding checking for port string match cases, should try to revert to this'''
-		# self.canvas_buttons = self.canvas.buttons[port]
-		# self.canvas_buttons[pin].config(image=self.red_zero_button_image)	# set image high
+		self.canvas_buttons = self.canvas.buttons[port]
+		self.canvas_buttons[pin].config(image=self.red_zero_button_image)	# set image high
 
-		# obj = self.ports[port]
-		# if hasattr(obj, pin_attr):
-		# 	gf_pin = getattr(obj, pin_attr)
-		# 	self.gf.gpio.output(gf_pin, 0)	# set the corresponding pin's output to high
-
-		if port == 'J1' and hasattr(J1, pin_attr):
-			gf_j1_pin = getattr(J1, pin_attr)
-			self.gf.gpio.output(gf_j1_pin, 0)	# set the corresponding pin's output to high
-			self.canvas.j1_buttons[pin].config(image=self.red_zero_button_image)	# set image high
-			self.state = 0
-			self.j1_output_pins[pin] = self.state 			# store input pins for polling
-
-		if port == 'J2' and hasattr(J2, pin_attr):
-			gf_j2_pin = getattr(J2, pin_attr)
-			self.gf.gpio.output(gf_j2_pin, 0)	# set the corresponding pin's output to high
-			self.canvas.j2_buttons[pin].config(image=self.red_zero_button_image)	# set image high
-			self.state = 0
-			self.j2_output_pins[pin] = self.state 			# store input pins for polling
-
-		if port == 'J7' and hasattr(J7, pin_attr):
-			gf_j7_pin = getattr(J7, pin_attr)
-			self.gf.gpio.output(gf_j7_pin, 0)	# set the corresponding pin's output to high
-			self.canvas.j7_buttons[pin].config(image=self.red_zero_button_image)	# set image high
-			self.state = 0
-			self.j7_output_pins[pin] = self.state 			# store input pins for polling
-
-	def get_state(self, j1_pins, j2_pins, j7_pins):
+	def get_board_state(self, j1_pins, j2_pins, j7_pins):
 		for pin in j1_pins:
 			pin_num = int(pin)
 			pin_attr = "P%d" % pin_num			
-			gf_j1_pin = getattr(J1, pin_attr)
+			gf_j1_pin = getattr(hardware.J1, pin_attr)
 			self.state = self.gf.gpio.input(gf_j1_pin)	# read the state of the pin, low or high
 			if self.state:
 				self.canvas.j1_buttons[pin].config(image=self.green_one_button_image)		# set image high
@@ -240,7 +123,7 @@ class TestPanel(tk.Tk):
 		for pin in j2_pins:
 			pin_num = int(pin)
 			pin_attr = "P%d" % pin_num			
-			gf_j2_pin = getattr(J2, pin_attr)
+			gf_j2_pin = getattr(hardware.J2, pin_attr)
 			self.state = self.gf.gpio.input(gf_j2_pin) 	# read the state of the pin, low or high
 			if self.state:
 				self.canvas.j2_buttons[pin].config(image=self.green_one_button_image)		# set image high
@@ -250,14 +133,14 @@ class TestPanel(tk.Tk):
 		for pin in j7_pins:
 			pin_num = int(pin)
 			pin_attr = "P%d" % pin_num		
-			gf_j7_pin = getattr(J7, pin_attr)
+			gf_j7_pin = getattr(hardware.J7, pin_attr)
 			self.state = self.gf.gpio.input(gf_j7_pin)	# read the state of the pin, low or high
 			if self.state:
 				self.canvas.j7_buttons[pin].config(image=self.green_one_button_image)		# set image high
 			else:
 				self.canvas.j7_buttons[pin].config(image=self.green_zero_button_image)		# set image low
 
-		self.after(100, self.get_state, j1_pins, j2_pins, j7_pins)
+		self.after(100, self.get_board_state, j1_pins, j2_pins, j7_pins)
 
 	def save_project(self):
 		#with open('oldsave.txt', 'w') as f:
@@ -265,7 +148,18 @@ class TestPanel(tk.Tk):
 		if f is None:
 			return
 		# input pins
+		j1_data = []
 		for pin in self.j1_input_pins:
+
+			pin_info = {
+				'port' : 'J1',
+				'pin' : pin,
+				'mode' : 'input',
+				'value' : None
+			}
+
+			j1_data.append(pin_info)
+
 			if pin < 10:								# add 0 to pins (01, 02,..) less than 10 to keep string length the same
 				print("J1P%d%di" % (0, pin))
 				f.write("J1P%d%di" % (0, pin)+'\n')
@@ -317,7 +211,9 @@ class TestPanel(tk.Tk):
 		f.close()
 
 	def load_project(self):
-		#with open('boardstate.txt', 'r') as f:
+		# pop up window for file navigation
+		# read pin configuration from a file line by line 
+		self.loaded_from_file = True 			# used to avoid trying to use a nonexistant "options" in line 126 in set_input
 		f = filedialog.askopenfile(initialdir = "/GreatFET-testpanel",title = "Select File",filetypes = (("text files","*.txt"),("all files","*.*")))
 		for line in f:
 			pin_line = line
@@ -351,7 +247,6 @@ class TestPanel(tk.Tk):
 					self.set_low(port, pin)
 			else:
 				print('board state file contains invalid data')
-
 		f.close()
 
 	def knight_rider(self):
@@ -362,7 +257,7 @@ class TestPanel(tk.Tk):
 			led4 = (3, 12)
 
 			for led in (led1, led2, led3, led4):
-				self.gf.gpio.setup(led, Directions.OUT)
+				self.gf.gpio.setup(led, hardware.Directions.OUT)
 
 			pattern = (led1, led2, led3, led4, led3, led2, led1)
 			for led in pattern:
@@ -412,6 +307,8 @@ class PanelCanvas(tk.Canvas):
 		self._init_j2_buttons(parent)
 		self._init_j7_buttons(parent)
 		self._init_button_dict()
+
+		#self.addtag_all("all")
 
 	def _init_j1_buttons(self, parent):
 		j1 = 'J1'
@@ -476,9 +373,16 @@ class PanelCanvas(tk.Canvas):
 		self.buttons = {'J1': self.j1_buttons,
 						'J2': self.j2_buttons,
 						'J7': self.j7_buttons}
+		self.addtag_all("all")
 
 	def print_num(self, header, pin):
 		print(header, ' p', pin, sep='')
+
+	def on_resize(self, event):
+		wscale = float(event.width)/self.width
+		hscale = float(event.height)/self.height
+		self.config(width=self.width, height=self.height)
+		self.scale("all",0,0,wscale,hscale)
 
 
 class StatusBar(tk.Label):
@@ -504,7 +408,8 @@ class PinOptionsWindow(tk.Toplevel):
 		self.grab_set()	# prevent the main window from opening more windows while this one is open
 		self.attributes("-topmost", True)	# force pin options popup window to stay on top
 
-		# on/off buttons
+		#if not window_created:
+			# on/off buttons
 		p = tk.IntVar()	# power
 		m = tk.IntVar()	# mode
 		v = tk.IntVar() # i/o value
@@ -516,10 +421,10 @@ class PinOptionsWindow(tk.Toplevel):
 		self.output_button = tk.Radiobutton(self, text="Output", state='normal', variable=m, value=0, 
 											command=lambda: parent.set_output(port, pin))
 		
-		self.one_button = tk.Radiobutton(self, text="High", state='normal', variable=v, value=1, 
-											command=lambda: parent.set_high(port, pin))
+		self.one_button = tk.Radiobutton(self, text="High", state='disabled', variable=v, value=1, 
+										command=lambda: parent.set_high(port, pin))
 		
-		self.zero_button = tk.Radiobutton(self, text="Low", state='normal', variable=v, value=0, 
+		self.zero_button = tk.Radiobutton(self, text="Low", state='disabled', variable=v, value=0, 
 											command=lambda: parent.set_low(port, pin))
 		
 		self.okay_button = tk.Button(self, text="Ok", command=self.destroy)
@@ -531,6 +436,8 @@ class PinOptionsWindow(tk.Toplevel):
 		self.zero_button.grid(row=2, column=1, sticky='w')
 		self.okay_button.grid(row=3, column=1, pady=5, sticky='se')
 
+		#window_created = true
+
 panel = TestPanel()
-panel.after(100, panel.get_state(panel.j1_input_pins, panel.j2_input_pins, panel.j7_input_pins)) # keep window updated based on GreatFET physical pins
+panel.after(100, panel.get_board_state(panel.j1_input_pins, panel.j2_input_pins, panel.j7_input_pins)) # keep window updated based on GreatFET physical pins
 panel.mainloop()
