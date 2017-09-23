@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 
+from __future__ import print_function
 import sys
+
 import tkinter as tk
 from tkinter import filedialog
 from tkinter.tix import *
