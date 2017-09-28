@@ -110,31 +110,22 @@ class TestPanel(tk.Tk):
 		self.canvas_buttons[pin].config(image=self.red_zero_button_image)	# set image high
 
 	def get_board_state(self, j1_pins, j2_pins, j7_pins):
-		for pin in j1_pins:
-			pin_num = int(pin)
-			pin_attr = "P%d" % pin_num			
-			gf_j1_pin = getattr(hardware.J1, pin_attr)
-			self.state = self.gf.gpio.input(gf_j1_pin)	# read the state of the pin, low or high
+		for pin in hardware.j1.pins:
+			self.state = self.gf.gpio.input(hardware.j1.pins[pin].tuple)		# read the state of the pin, low or high
 			if self.state:
 				self.canvas.j1_buttons[pin].config(image=self.green_one_button_image)		# set image high
 			else:
 				self.canvas.j1_buttons[pin].config(image=self.green_zero_button_image)		# set image low
 
-		for pin in j2_pins:
-			pin_num = int(pin)
-			pin_attr = "P%d" % pin_num			
-			gf_j2_pin = getattr(hardware.J2, pin_attr)
-			self.state = self.gf.gpio.input(gf_j2_pin) 	# read the state of the pin, low or high
+		for pin in hardware.j2.pins:
+			self.state = self.gf.gpio.input(hardware.j2.pins[pin].tuple)	 	# read the state of the pin, low or high
 			if self.state:
 				self.canvas.j2_buttons[pin].config(image=self.green_one_button_image)		# set image high
 			else:
 				self.canvas.j2_buttons[pin].config(image=self.green_zero_button_image)		# set image low
 
-		for pin in j7_pins:
-			pin_num = int(pin)
-			pin_attr = "P%d" % pin_num		
-			gf_j7_pin = getattr(hardware.J7, pin_attr)
-			self.state = self.gf.gpio.input(gf_j7_pin)	# read the state of the pin, low or high
+		for pin in hardware.j7.pins:
+			self.state = self.gf.gpio.input(hardware.j7.pins[pin].tuple)		# read the state of the pin, low or high
 			if self.state:
 				self.canvas.j7_buttons[pin].config(image=self.green_one_button_image)		# set image high
 			else:
@@ -249,22 +240,6 @@ class TestPanel(tk.Tk):
 				print('board state file contains invalid data')
 		f.close()
 
-	def knight_rider(self):
-			self.status.config(text="David Hasselhoff")
-			led1 = (3, 14)
-			led2 = (2, 1)
-			led3 = (3, 13)
-			led4 = (3, 12)
-
-			for led in (led1, led2, led3, led4):
-				self.gf.gpio.setup(led, hardware.Directions.OUT)
-
-			pattern = (led1, led2, led3, led4, led3, led2, led1)
-			for led in pattern:
-				self.gf.gpio.output(led, False) # on
-				time.sleep(0.1)
-				self.gf.gpio.output(led, True) # on
-
 	def do_nothing(self):
 		print("TestPanel do nothing")
 
@@ -290,8 +265,6 @@ class PanelMenu(tk.Menu):
 class PanelToolbar(tk.Frame):
 	def __init__(self, parent):
 		tk.Frame.__init__(self, parent)
-		knight_rider_button = tk.Button(self, text="Knight Rider", command=parent.knight_rider)
-		knight_rider_button.pack(side=tk.LEFT, padx=2, pady=2)
 		self.pack(side=tk.TOP, fill=tk.X)
 
 
