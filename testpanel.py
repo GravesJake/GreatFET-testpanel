@@ -133,6 +133,13 @@ class TestPanel(tk.Tk):
 			else:
 				self.canvas.j7_buttons[pin].config(image=self.green_zero_button_image)		# set image low
 
+				# this is how it's going to look
+		# for pin in port.pins:
+		# 	if port.pins[pin].mode == 0:
+		# 		if port.pins[pin].state == 1:
+		# 			self.canvas.XXXXXX.config(image=self.green_one_button_image)
+		# 		else:
+		# 			self.canvas.XXXXXX.config(image=self.green_zero_button_image)
 		self.after(100, self.get_board_state, j1_pins, j2_pins, j7_pins)
 
 	def save_project(self):
@@ -286,7 +293,8 @@ class PanelCanvas(tk.Canvas):
 		#self.addtag_all("all")
 
 	def _init_j1_buttons(self, parent):
-		j1 = 'J1'
+		#j1 = 'J1'
+		j1 = hardware.j1
 		self.j1_buttons = [None]		# pin numbers start at 1
 		x_coord = 233
 		x_offset = 43	# pins are 43 pixels apart on the x axis
@@ -307,7 +315,8 @@ class PanelCanvas(tk.Canvas):
 			y_coord = 865
 
 	def _init_j2_buttons(self, parent):
-		j2 = 'J2'
+		#j2 = 'J2'
+		j2 = hardware.j2
 		self.j2_buttons = [None]			# pin numbers start at 1
 		x_coord = 233	
 		x_offset = 43	# pins are 43 pixels apart on the x axis
@@ -328,7 +337,8 @@ class PanelCanvas(tk.Canvas):
 			y_coord = 90
 
 	def _init_j7_buttons(self, parent):
-		j7 = 'J7'
+		#j7 = 'J7'
+		j2 = hardware.j7
 		self.j7_buttons = [None]		# pin numbers start at 1
 		x_coord = 233
 		x_offset = 43	# pins are 43 pixels apart on the x axis
