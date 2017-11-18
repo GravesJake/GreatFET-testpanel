@@ -1,7 +1,10 @@
 #!/usr/bin/env python3
 
 import tkinter as tk
+from tkinter import filedialog
 import hardware
+import json
+from greatfet import GreatFET
 
 class TestPanel(tk.Tk):
 	def __init__(self):
@@ -30,7 +33,7 @@ class TestPanel(tk.Tk):
 
 		self.loaded_from_file = False	# used to check for loading board configs from file
 
-		self.gf = hardware.GreatFET()	
+		self.gf = GreatFET()	
 		hardware._init_board(self)
 
 	def open_options(self, port, pin):
@@ -97,7 +100,14 @@ class TestPanel(tk.Tk):
 		self.after(100, self.get_board_state)	# poll the board every 100ms
 
 	def save_project(self):
-		self.status.config(text="Needs to be converted to new version")
+		hardware.serialize_board(self)
+		config_file = filedialog.asksaveasfile(mode='w', defaultextension='.txt')
+		if config_file is None:
+			return
+		
+		for port in hardware.b.ports:
+			json.dump(port.pin_list, config_file, indent=4)
+		config_file.close()
 
 	def load_project(self):
 		self.status.config(text="Needs to be converted to new version")
@@ -112,6 +122,7 @@ class PanelMenu(tk.Menu):
 		sub_menu.add_command(label="Load Project", command=parent.load_project)
 		sub_menu.add_separator()
 		sub_menu.add_command(label="Exit", command=quit)
+
 
 class PanelToolbar(tk.Frame):
 	def __init__(self, parent):
@@ -131,8 +142,6 @@ class PanelCanvas(tk.Canvas):
 		self._init_j2_buttons(parent)
 		self._init_j7_buttons(parent)
 		self._init_button_dict()
-
-		#self.addtag_all("all")
 
 	def _init_j1_buttons(self, parent):
 		j1 = hardware.j1
