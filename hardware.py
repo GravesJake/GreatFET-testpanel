@@ -11,7 +11,6 @@ class Port():
 	def __init__(self, name, gf_port, size, unclickable_pins=[]):
 		self.name = name
 		self.pins = {}
-		self.pin_list = []		# for serialize, list of pins (dictionaries)
 		self.unclickable_pins = unclickable_pins
 		for i in range(1, size):
 			if i not in self.unclickable_pins:
@@ -21,7 +20,6 @@ class Port():
 class Pin():
 	def __init__(self, number, port, gf_port, mode=0, state=0):
 		self.name = "P%d" % number
-		#self.number = number	# this is a string
 		self.tuple = getattr(gf_port, self.name)
 		self.port = port 
 		self.mode = mode		# input/output (0,1)
@@ -60,11 +58,18 @@ def set_greatfet_low(self, port, pin):	# set an output pin to low
 
 # create a JSON compatible version of the board
 def serialize_board(self): 
+	all_pins = []
+	port_pins = []
 	for port in b.ports:
 		for pin in port.pins:
 			if port.pins[pin].mode == 0:		# input pin
-				port.pin_list.append({"port" : port.name, "pin" : "P%d" % (pin), "pin_mode" : "input"})#port.pins[pin].mode})
+				port_pins.append({"port" : port.name, "pin" : "P%d" % (pin), "pin_mode" : "input"})#port.pins[pin].mode})
 				# dictionary containing input pin info
 			if port.pins[pin].mode == 1:		# output pin
 				# dictionary containing output pin info (includes high/low state)
-				port.pin_list.append({"port" : port.name, "pin" : "P%d" % (pin), "pin_mode" : "output", "pin_state" : port.pins[pin].state})
+				port_pins.append({"port" : port.name, "pin" : "P%d" % (pin), "pin_mode" : "output", "pin_state" : port.pins[pin].state})
+	
+		all_pins.append(port_pins)
+		port_pins = []		# reset the pin list on each new GreatFET Port
+
+	return all_pins

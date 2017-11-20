@@ -21,7 +21,7 @@ class TestPanel(tk.Tk):
 
 		# initialize the window
 		w = 1250
-		h = 960
+		h = 930
 		self.wm_title("GreatFET Test Panel")		
 		self.geometry("%dx%d+%d+%d" % (w, h, 0, 0)) # set size and position of window
 		self.resizable(width=True, height=True)
@@ -100,13 +100,13 @@ class TestPanel(tk.Tk):
 		self.after(100, self.get_board_state)	# poll the board every 100ms
 
 	def save_project(self):
-		hardware.serialize_board(self)
+		all_pins = hardware.serialize_board(self)
 		config_file = filedialog.asksaveasfile(mode='w', defaultextension='.txt')
 		if config_file is None:
 			return
 		
-		for port in hardware.b.ports:
-			json.dump(port.pin_list, config_file, indent=4)
+		config_file.truncate(0) 	# clear the file each time we have to save to it
+		json.dump(all_pins, config_file, indent=4)	# dump the JSON version of the board config to file
 		config_file.close()
 
 	def load_project(self):
@@ -116,12 +116,12 @@ class TestPanel(tk.Tk):
 class PanelMenu(tk.Menu):
 	def __init__(self, parent):
 		tk.Menu.__init__(self, parent)
-		sub_menu = tk.Menu(self, tearoff=0)							# tearoff removes the dotted line "button" located at 0
-		self.add_cascade(label="File", menu=sub_menu) 				# sub_menu will appear as the dropdown under File
-		sub_menu.add_command(label="Save Project", command=parent.save_project)
-		sub_menu.add_command(label="Load Project", command=parent.load_project)
-		sub_menu.add_separator()
-		sub_menu.add_command(label="Exit", command=quit)
+		file_menu = tk.Menu(self, tearoff=0)							# tearoff removes the dotted line "button" located at 0
+		self.add_cascade(label="File", menu=file_menu) 				# sub_menu will appear as the dropdown under File
+		file_menu.add_command(label="Save Project", command=parent.save_project)
+		file_menu.add_command(label="Load Project", command=parent.load_project)
+		file_menu.add_separator()
+		file_menu.add_command(label="Exit", command=quit)
 
 
 class PanelToolbar(tk.Frame):
@@ -259,6 +259,7 @@ class PinOptionsWindow(tk.Toplevel):
 		self.one_button.grid(row=2, column=0, sticky='w')
 		self.zero_button.grid(row=2, column=1, sticky='w')
 		self.okay_button.grid(row=3, column=1, pady=5, sticky='se')
+
 
 panel = TestPanel()
 panel.after(100, panel.get_board_state())	# poll the board every 100ms
