@@ -39,6 +39,9 @@ class TestPanel(tk.Tk):
 	def open_options(self, port, pin):
 		self.options = PinOptionsWindow(self, port, pin)
 
+	def open_help_menu(self):
+		self.help_menu = HelpMenuWindow(self)
+
 	def set_input(self, port, pin):
 		hardware.set_greatfet_input(self, port, pin)	# configure board
 		self.set_input_image(port, pin)					# update UI
@@ -122,6 +125,9 @@ class PanelMenu(tk.Menu):
 		file_menu.add_command(label="Load Project", command=parent.load_project)
 		file_menu.add_separator()
 		file_menu.add_command(label="Exit", command=quit)
+
+		#help_menu = tk.Menu(self, tearoff=0)
+		self.add_command(label="Help", command=parent.open_help_menu)
 
 
 class PanelToolbar(tk.Frame):
@@ -259,6 +265,46 @@ class PinOptionsWindow(tk.Toplevel):
 		self.one_button.grid(row=2, column=0, sticky='w')
 		self.zero_button.grid(row=2, column=1, sticky='w')
 		self.okay_button.grid(row=3, column=1, pady=5, sticky='se')
+
+
+class HelpMenuWindow(tk.Toplevel):
+	def __init__(self, parent):
+		tk.Toplevel.__init__(self)
+		x = parent.winfo_x()
+		y = parent.winfo_y()
+		x_offset = 20
+		y_offset = 100
+		w = 470
+		h = 360
+
+		self.title("Help")
+		self.geometry("%dx%d+%d+%d" % (w, h, x + x_offset, y + y_offset)) # set size and position of window
+		self.grab_set()
+		self.attributes("-topmost", True)
+
+		text = tk.Text(self, height=300, width=300)
+		text.pack(side=tk.LEFT, fill=tk.Y)
+
+		text.tag_config("a", foreground="blue")
+		text.config(cursor="arrow")
+
+		help_message = """Welcome to the GreatFET Test Panel!
+
+Here you will be able to configure any usable pin on the GreatFET and get realtime visual feedback.
+
+- Input pins are shown by the green indicators and Output pins are shown in red.
+
+- All usable pins on the board are initialized to Input on startup.
+
+- You'll notice 1's and 0's on each indicator. This is the current value on the pin (high/low).
+	Clicking on a pin will open up an options window for that pin, allowing you to configure it how you like.
+
+- Setting pins to input will allow you to get values from things like buttons.
+
+- Setting pins to output will allow you to set that pin to high or low and do things like toggle LEDs.
+
+- If you have your pins configured in a way you'd like to reuse later, you can go to the File menu and save it and load it back in later."""
+		text.insert(tk.INSERT, help_message, "a")
 
 
 panel = TestPanel()
