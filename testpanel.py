@@ -8,8 +8,6 @@ from greatfet import GreatFET
 
 class TestPanel(tk.Tk):
 	def __init__(self):
-		self.ports = {'J1': hardware.J1, 'J2': hardware.J2, 'J7': hardware.J7}
-
 		tk.Tk.__init__(self)
 		self.black_button_image = tk.PhotoImage(file='icons/black_button.png')
 		self.green_button_image = tk.PhotoImage(file='icons/green_button.png')
@@ -31,8 +29,6 @@ class TestPanel(tk.Tk):
 		self.canvas = PanelCanvas(self)
 		self.status = StatusBar(self)
 
-		self.loaded_from_file = False	# used to check for loading board configs from file
-
 		self.gf = GreatFET()	
 		hardware._init_board(self)
 
@@ -42,11 +38,11 @@ class TestPanel(tk.Tk):
 	def open_help_menu(self):
 		self.help_menu = HelpMenuWindow(self)
 
-	def set_input(self, port, pin):
+	def set_input(self, port, pin, file_flag):
 		hardware.set_greatfet_input(self, port, pin)	# configure board
-		self.set_input_image(port, pin)					# update UI
+		self.set_input_image(port, pin, file_flag)					# update UI
 
-	def set_input_image(self, port, pin):
+	def set_input_image(self, port, pin, file_flag):
 		self.status.config(text="%s Pin %d set to Input" % (port.name, pin))
 		self.canvas.buttons[port.name][pin].config(image=self.green_button_image)
 
@@ -56,20 +52,20 @@ class TestPanel(tk.Tk):
 			self.canvas.buttons[port.name][pin].config(image=self.green_zero_button_image)		# set image low
 
 		# this doesn't need to happen when configuring pins from file so check for that
-		if self.loaded_from_file is False:
+		if file_flag is False:
 			self.options.one_button.config(state='disabled')
 			self.options.zero_button.config(state='disabled')
 
-	def set_output(self, port, pin):
+	def set_output(self, port, pin, file_flag):
 		hardware.set_greatfet_output(self, port, pin)					# configure board
-		self.set_output_image(port, pin)								# update UI
+		self.set_output_image(port, pin, file_flag)								# update UI
 
-	def set_output_image(self, port, pin):
+	def set_output_image(self, port, pin, file_flag):
 		self.status.config(text="%s Pin %d set to Output" % (port.name, pin))
 		self.canvas.buttons[port.name][pin].config(image=self.red_button_image)	# set image to output
 
 		# this doesn't need to happen when configuring pins from file
-		if self.loaded_from_file is False:
+		if file_flag is False:
 			self.options.one_button.config(state='normal')
 			self.options.zero_button.config(state='normal')
 
@@ -93,7 +89,7 @@ class TestPanel(tk.Tk):
 	def get_board_state(self):
 		for port in hardware.b.ports:	# look through all the ports on the board
 			for pin in port.pins:		# look through all the pins in each port
-				if port.pins[pin].mode == 0: # 0 for input pins
+				if port.pins[pin].mode == "i": # i for input pins
 					port.pins[pin].state = self.gf.gpio.input(port.pins[pin].tuple) # read/set the state of the input pins (High/Low)
 					if port.pins[pin].state == True: # True for high
 						self.canvas.buttons[port.name][pin].config(image=self.green_one_button_image) # port.name is a string linked to an actual hardware port
@@ -103,17 +99,62 @@ class TestPanel(tk.Tk):
 		self.after(100, self.get_board_state)	# poll the board every 100ms
 
 	def save_project(self):
-		all_pins = hardware.serialize_board(self)
-		config_file = filedialog.asksaveasfile(mode='w', defaultextension='.txt')
+		all_pins = self.serialize_board()
+		config_file = filedialog.asksaveasfile(mode='w', defaultextension='.json')
 		if config_file is None:
 			return
 		
 		config_file.truncate(0) 	# clear the file each time we have to save to it
 		json.dump(all_pins, config_file, indent=4)	# dump the JSON version of the board config to file
 		config_file.close()
+		self.status.config(text="Configuration saved to file")
 
 	def load_project(self):
-		self.status.config(text="Needs to be converted to new version")
+		config_file = filedialog.askopenfile(initialdir = "/GreatFET-testpanel",title = "Select File",filetypes = (("JSON files","*.json"),("all files","*.*")))
+		loaded_pins = json.load(config_file)
+		config_file.close()
+		hardware._init_board(self)
+		self.deserialize_board(loaded_pins)
+		self.status.config(text="Configuration loaded from file")
+
+	# create a JSON compatible version of the board
+	def serialize_board(self): 
+		json_ports = {"J1" : [], "J2" : [], "J7" : []}
+		for port in hardware.b.ports:
+			for pin in port.pins:
+				json_ports[port.name].append({"pin_number" : port.pins[pin].number, "pin_mode" : port.pins[pin].mode, "pin_state" : port.pins[pin].state})
+		return json_ports
+
+	def deserialize_board(self, loaded_board):
+		for loaded_port, loaded_pins in loaded_board.items():	# J1, J2, J3 are keys, the value for each is a list of dictionaries
+			for loaded_pin in loaded_pins:		# each dictionary in the list of pins
+				if loaded_port == "J1":
+					if loaded_pin["pin_mode"] == "i":
+						self.set_input(hardware.j1, loaded_pin["pin_number"], True)
+					if loaded_pin["pin_mode"] == "o":
+						self.set_output(hardware.j1, loaded_pin["pin_number"], True)
+						if loaded_pin["pin_state"] == True:
+							self.set_high(hardware.j1, loaded_pin["pin_number"])
+						else:
+							self.set_low(hardware.j1, loaded_pin["pin_number"])
+				if loaded_port == "J2":
+					if loaded_pin["pin_mode"] == "i":
+						self.set_input(hardware.j2, loaded_pin["pin_number"], True)
+					if loaded_pin["pin_mode"] == "o":
+						self.set_output(hardware.j2, loaded_pin["pin_number"], True)
+						if loaded_pin["pin_state"] == True:
+							self.set_high(hardware.j2, loaded_pin["pin_number"])
+						else:
+							self.set_low(hardware.j2, loaded_pin["pin_number"])
+				if loaded_port == "J7":
+					if loaded_pin["pin_mode"] == "i":
+						self.set_input(hardware.j7, loaded_pin["pin_number"], True)
+					if loaded_pin["pin_mode"] == "o":
+						self.set_output(hardware.j7, loaded_pin["pin_number"], True)
+						if loaded_pin["pin_state"] == True:
+							self.set_high(hardware.j7, loaded_pin["pin_number"])
+						else:
+							self.set_low(hardware.j7, loaded_pin["pin_number"])
 
 
 class PanelMenu(tk.Menu):
@@ -125,15 +166,7 @@ class PanelMenu(tk.Menu):
 		file_menu.add_command(label="Load Project", command=parent.load_project)
 		file_menu.add_separator()
 		file_menu.add_command(label="Exit", command=quit)
-
-		#help_menu = tk.Menu(self, tearoff=0)
 		self.add_command(label="Help", command=parent.open_help_menu)
-
-
-class PanelToolbar(tk.Frame):
-	def __init__(self, parent):
-		tk.Frame.__init__(self, parent)
-		self.pack(side=tk.TOP, fill=tk.X)
 
 
 class PanelCanvas(tk.Canvas):
@@ -246,10 +279,10 @@ class PinOptionsWindow(tk.Toplevel):
 
 		# create pin options buttons
 		self.input_button = tk.Radiobutton(self, text="Input", state='normal', variable=m, value=1, 
-											command=lambda: parent.set_input(port, pin))
+											command=lambda: parent.set_input(port, pin, False))
 		
 		self.output_button = tk.Radiobutton(self, text="Output", state='normal', variable=m, value=0, 
-											command=lambda: parent.set_output(port, pin))
+											command=lambda: parent.set_output(port, pin, False))
 		
 		self.one_button = tk.Radiobutton(self, text="High", state='disabled', variable=v, value=1, 
 										command=lambda: parent.set_high(port, pin))
@@ -275,7 +308,7 @@ class HelpMenuWindow(tk.Toplevel):
 		x_offset = 20
 		y_offset = 100
 		w = 470
-		h = 360
+		h = 370
 
 		self.title("Help")
 		self.geometry("%dx%d+%d+%d" % (w, h, x + x_offset, y + y_offset)) # set size and position of window
@@ -297,7 +330,8 @@ Here you will be able to configure any usable pin on the GreatFET and get realti
 - All usable pins on the board are initialized to Input on startup.
 
 - You'll notice 1's and 0's on each indicator. This is the current value on the pin (high/low).
-	Clicking on a pin will open up an options window for that pin, allowing you to configure it how you like.
+	
+- Clicking on a pin will open up an options window for that pin, allowing you to configure it how you like.
 
 - Setting pins to input will allow you to get values from things like buttons.
 
@@ -305,6 +339,8 @@ Here you will be able to configure any usable pin on the GreatFET and get realti
 
 - If you have your pins configured in a way you'd like to reuse later, you can go to the File menu and save it and load it back in later."""
 		text.insert(tk.INSERT, help_message, "a")
+
+
 
 
 panel = TestPanel()
