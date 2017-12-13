@@ -22,7 +22,7 @@ class TestPanel(tk.Tk):
 		h = 930
 		self.wm_title("GreatFET Test Panel")		
 		self.geometry("%dx%d+%d+%d" % (w, h, 0, 0)) # set size and position of window
-		self.resizable(width=True, height=True)
+		self.resizable(width=False, height=False)
 
 		menubar = PanelMenu(self)
 		self.config(menu=menubar)
@@ -308,18 +308,12 @@ class HelpMenuWindow(tk.Toplevel):
 		x_offset = 20
 		y_offset = 100
 		w = 470
-		h = 370
+		h = 310
 
 		self.title("Help")
 		self.geometry("%dx%d+%d+%d" % (w, h, x + x_offset, y + y_offset)) # set size and position of window
 		self.grab_set()
 		self.attributes("-topmost", True)
-
-		text = tk.Text(self, height=300, width=300)
-		text.pack(side=tk.LEFT, fill=tk.Y)
-
-		text.tag_config("a", foreground="blue")
-		text.config(cursor="arrow")
 
 		help_message = """Welcome to the GreatFET Test Panel!
 
@@ -338,10 +332,9 @@ Here you will be able to configure any usable pin on the GreatFET and get realti
 - Setting pins to output will allow you to set that pin to high or low and do things like toggle LEDs.
 
 - If you have your pins configured in a way you'd like to reuse later, you can go to the File menu and save it and load it back in later."""
-		text.insert(tk.INSERT, help_message, "a")
 
-
-
+		msg = tk.Message(self, text=help_message)
+		msg.pack()
 
 panel = TestPanel()
 panel.after(100, panel.get_board_state())	# poll the board every 100ms
