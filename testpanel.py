@@ -16,11 +16,15 @@ class TestPanel(tk.Tk):
 		self.red_button_image = tk.PhotoImage(file='icons/red_button.png')
 		self.red_zero_button_image = tk.PhotoImage(file='icons/red_zero_button.png')
 		self.red_one_button_image = tk.PhotoImage(file='icons/red_one_button.png')
+		self.icon_image = tk.PhotoImage(file='icons/gsg.png')
+		self.help_image = tk.PhotoImage(file='icons/help_icon.png')
 
 		# initialize the window
 		w = 1250
 		h = 930
 		self.wm_title("GreatFET Test Panel")		
+		#self.wm_iconbitmap('icons/gsg.ico')
+		self.tk.call('wm', 'iconphoto', self._w, self.icon_image)
 		self.geometry("%dx%d+%d+%d" % (w, h, 0, 0)) # set size and position of window
 		self.resizable(width=False, height=False)
 
@@ -37,6 +41,9 @@ class TestPanel(tk.Tk):
 
 	def open_help_menu(self):
 		self.help_menu = HelpMenuWindow(self)
+
+	def reset_board(self):
+		hardware._init_board(self)
 
 	def set_input(self, port, pin, file_flag):
 		hardware.set_greatfet_input(self, port, pin)	# configure board
@@ -103,7 +110,6 @@ class TestPanel(tk.Tk):
 		config_file = filedialog.asksaveasfile(mode='w', defaultextension='.json')
 		if config_file is None:
 			return
-		
 		config_file.truncate(0) 	# clear the file each time we have to save to it
 		json.dump(all_pins, config_file, indent=4)	# dump the JSON version of the board config to file
 		config_file.close()
@@ -111,6 +117,8 @@ class TestPanel(tk.Tk):
 
 	def load_project(self):
 		config_file = filedialog.askopenfile(initialdir = "/GreatFET-testpanel",title = "Select File",filetypes = (("JSON files","*.json"),("all files","*.*")))
+		if config_file is None:
+			return
 		loaded_pins = json.load(config_file)
 		config_file.close()
 		hardware._init_board(self)
@@ -166,6 +174,9 @@ class PanelMenu(tk.Menu):
 		file_menu.add_command(label="Load Project", command=parent.load_project)
 		file_menu.add_separator()
 		file_menu.add_command(label="Exit", command=quit)
+		edit_menu = tk.Menu(self, tearoff=0)
+		self.add_cascade(label="Edit", menu=edit_menu)
+		edit_menu.add_command(label="Reset Board", command=parent.reset_board)
 		self.add_command(label="Help", command=parent.open_help_menu)
 
 
@@ -273,6 +284,7 @@ class PinOptionsWindow(tk.Toplevel):
 		self.resizable(width=False, height=False)
 		self.grab_set()			# prevent the main window from opening more windows while this one is open
 		self.attributes("-topmost", True)	# force pin options popup window to stay on top
+		self.tk.call('wm', 'iconphoto', self._w, parent.black_button_image)
 
 		m = tk.IntVar()	# mode
 		v = tk.IntVar() # i/o value
@@ -285,7 +297,7 @@ class PinOptionsWindow(tk.Toplevel):
 											command=lambda: parent.set_output(port, pin, False))
 		
 		self.one_button = tk.Radiobutton(self, text="High", state='disabled', variable=v, value=1, 
-										command=lambda: parent.set_high(port, pin))
+											command=lambda: parent.set_high(port, pin))
 		
 		self.zero_button = tk.Radiobutton(self, text="Low", state='disabled', variable=v, value=0, 
 											command=lambda: parent.set_low(port, pin))
@@ -312,8 +324,10 @@ class HelpMenuWindow(tk.Toplevel):
 
 		self.title("Help")
 		self.geometry("%dx%d+%d+%d" % (w, h, x + x_offset, y + y_offset)) # set size and position of window
+		self.resizable(width=False, height=False)
 		self.grab_set()
 		self.attributes("-topmost", True)
+		self.tk.call('wm', 'iconphoto', self._w, parent.help_image)
 
 		help_message = """Welcome to the GreatFET Test Panel!
 
