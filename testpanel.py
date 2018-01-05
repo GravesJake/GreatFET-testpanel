@@ -4,7 +4,6 @@ import tkinter as tk
 from tkinter import filedialog
 import hardware
 import json
-from greatfet import GreatFET
 
 class TestPanel(tk.Tk):
 	def __init__(self):
@@ -23,7 +22,6 @@ class TestPanel(tk.Tk):
 		w = 1250
 		h = 930
 		self.wm_title("GreatFET Test Panel")		
-		#self.wm_iconbitmap('icons/gsg.ico')
 		self.tk.call('wm', 'iconphoto', self._w, self.icon_image)
 		self.geometry("%dx%d+%d+%d" % (w, h, 0, 0)) # set size and position of window
 		self.resizable(width=False, height=False)
@@ -32,9 +30,7 @@ class TestPanel(tk.Tk):
 		self.config(menu=menubar)
 		self.canvas = PanelCanvas(self)
 		self.status = StatusBar(self)
-
-		self.gf = GreatFET()	
-		hardware._init_board(self)
+		hardware._init_board()
 
 	def open_options(self, port, pin):
 		self.options = PinOptionsWindow(self, port, pin)
@@ -43,10 +39,10 @@ class TestPanel(tk.Tk):
 		self.help_menu = HelpMenuWindow(self)
 
 	def reset_board(self):
-		hardware._init_board(self)
+		hardware._init_board()
 
 	def set_input(self, port, pin, file_flag):
-		hardware.set_greatfet_input(self, port, pin)	# configure board
+		hardware.set_greatfet_input(port, pin)	# configure board
 		self.set_input_image(port, pin, file_flag)					# update UI
 
 	def set_input_image(self, port, pin, file_flag):
@@ -64,7 +60,7 @@ class TestPanel(tk.Tk):
 			self.options.zero_button.config(state='disabled')
 
 	def set_output(self, port, pin, file_flag):
-		hardware.set_greatfet_output(self, port, pin)					# configure board
+		hardware.set_greatfet_output(port, pin)					# configure board
 		self.set_output_image(port, pin, file_flag)								# update UI
 
 	def set_output_image(self, port, pin, file_flag):
@@ -77,7 +73,7 @@ class TestPanel(tk.Tk):
 			self.options.zero_button.config(state='normal')
 
 	def set_high(self, port, pin):
-		hardware.set_greatfet_high(self, port, pin)
+		hardware.set_greatfet_high(port, pin)
 		self.set_high_image(port, pin)
 
 	def set_high_image(self, port, pin):
@@ -85,7 +81,7 @@ class TestPanel(tk.Tk):
 		self.canvas.buttons[port.name][pin].config(image=self.red_one_button_image)	# set image high
 
 	def set_low(self, port, pin):
-		hardware.set_greatfet_low(self, port, pin)
+		hardware.set_greatfet_low(port, pin)
 		self.set_low_image(port, pin)
 
 	def set_low_image(self, port, pin):
@@ -97,12 +93,11 @@ class TestPanel(tk.Tk):
 		for port in hardware.b.ports:	# look through all the ports on the board
 			for pin in port.pins:		# look through all the pins in each port
 				if port.pins[pin].mode == "i": # i for input pins
-					port.pins[pin].state = self.gf.gpio.input(port.pins[pin].tuple) # read/set the state of the input pins (High/Low)
+					port.pins[pin].state = hardware.gf.gpio.input(port.pins[pin].tuple) # read/set the state of the input pins (High/Low)
 					if port.pins[pin].state == True: # True for high
 						self.canvas.buttons[port.name][pin].config(image=self.green_one_button_image) # port.name is a string linked to an actual hardware port
-					else:	# False for low
+					else:				# False for low
 						self.canvas.buttons[port.name][pin].config(image=self.green_zero_button_image)
-
 		self.after(100, self.get_board_state)	# poll the board every 100ms
 
 	def save_project(self):
@@ -110,7 +105,7 @@ class TestPanel(tk.Tk):
 		config_file = filedialog.asksaveasfile(mode='w', defaultextension='.json')
 		if config_file is None:
 			return
-		config_file.truncate(0) 	# clear the file each time we have to save to it
+		config_file.truncate(0) 					# clear the file each time we have to save to it
 		json.dump(all_pins, config_file, indent=4)	# dump the JSON version of the board config to file
 		config_file.close()
 		self.status.config(text="Configuration saved to file")
@@ -121,7 +116,7 @@ class TestPanel(tk.Tk):
 			return
 		loaded_pins = json.load(config_file)
 		config_file.close()
-		hardware._init_board(self)
+		hardware._init_board()
 		self.deserialize_board(loaded_pins)
 		self.status.config(text="Configuration loaded from file")
 
@@ -168,7 +163,7 @@ class TestPanel(tk.Tk):
 class PanelMenu(tk.Menu):
 	def __init__(self, parent):
 		tk.Menu.__init__(self, parent)
-		file_menu = tk.Menu(self, tearoff=0)							# tearoff removes the dotted line "button" located at 0
+		file_menu = tk.Menu(self, tearoff=0)						# tearoff removes the dotted line "button" located at 0
 		self.add_cascade(label="File", menu=file_menu) 				# sub_menu will appear as the dropdown under File
 		file_menu.add_command(label="Save Project", command=parent.save_project)
 		file_menu.add_command(label="Load Project", command=parent.load_project)
@@ -215,7 +210,7 @@ class PanelCanvas(tk.Canvas):
 
 	def _init_j2_buttons(self, parent):
 		j2 = hardware.j2
-		self.j2_buttons = [None]			# pin numbers start at 1
+		self.j2_buttons = [None]		# pin numbers start at 1
 		x_coord = 233	
 		x_offset = 43	# pins are 43 pixels apart on the x axis
 		y_coord = 90	
@@ -265,7 +260,7 @@ class PanelCanvas(tk.Canvas):
 class StatusBar(tk.Label):
 	def __init__(self, parent):
 		tk.Label.__init__(self, parent)
-		self.config(text="", bd=1, relief=tk.SUNKEN, anchor='w')	# bd = border, SUNKEN is style, anchored West
+		self.config(text="", bd=1, relief=tk.SUNKEN, anchor='w')
 		self.pack(side=tk.BOTTOM, fill=tk.X)
 
 
@@ -280,9 +275,9 @@ class PinOptionsWindow(tk.Toplevel):
 		h = 110
 
 		self.title("Pin Options")
-		self.geometry("%dx%d+%d+%d" % (w, h, x + x_offset, y + y_offset)) # set size and position of window
+		self.geometry("%dx%d+%d+%d" % (w, h, x + x_offset, y + y_offset))
 		self.resizable(width=False, height=False)
-		self.grab_set()			# prevent the main window from opening more windows while this one is open
+		self.grab_set()						# prevent the main window from opening more windows while this one is open
 		self.attributes("-topmost", True)	# force pin options popup window to stay on top
 		self.tk.call('wm', 'iconphoto', self._w, parent.black_button_image)
 
@@ -323,7 +318,7 @@ class HelpMenuWindow(tk.Toplevel):
 		h = 310
 
 		self.title("Help")
-		self.geometry("%dx%d+%d+%d" % (w, h, x + x_offset, y + y_offset)) # set size and position of window
+		self.geometry("%dx%d+%d+%d" % (w, h, x + x_offset, y + y_offset))
 		self.resizable(width=False, height=False)
 		self.grab_set()
 		self.attributes("-topmost", True)
