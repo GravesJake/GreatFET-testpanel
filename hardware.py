@@ -1,11 +1,10 @@
 #!/usr/bin/env python3
 
 from greatfet import GreatFET
-from greatfet.peripherals.gpio import DIRECTION_IN, DIRECTION_OUT, GPIO
+from greatfet.peripherals.gpio import DIRECTION_IN, DIRECTION_OUT
 from greatfet.boards.one import GreatFETOne
 
 gf = GreatFET() 
-gpio_board = GPIO(gf)
 
 
 class Board():
@@ -14,17 +13,17 @@ class Board():
 
 
 class Port():
-    def __init__(self, name, gf_port, size, unclickable_pins=[]):
+    def __init__(self, name, size, unclickable_pins=[]):
         self.name = name
         self.pins = {}
         self.unclickable_pins = unclickable_pins
         for i in range(1, size):
             if i not in self.unclickable_pins:
-                self.pins[i] = Pin(i, self, gf_port) # pin number needs to be a string
+                self.pins[i] = Pin(i, self) # pin number needs to be a string
 
 
 class Pin():
-    def __init__(self, number, port, gf_port, mode=0, state=0):
+    def __init__(self, number, port, mode=0, state=0):
         self.name = "P%d" % number
         self.number = number
         self.port = port 
@@ -144,21 +143,17 @@ class J7(object):
     # P19 = GND
     # P20 = VCC
 
-j1 = Port('J1', J1, 40, (1,2,11,36,38))
-j2 = Port('J2', J2, 40, (1,2,5,11,12,17,21,26,32,39,40))
-j7 = Port('J7', J7, 20, (1,4,5,9,10,11,12,19,20))
+j1 = Port('J1', 40, (1,2,11,36,38))
+j2 = Port('J2', 40, (1,2,5,11,12,17,21,26,32,39,40))
+j7 = Port('J7', 20, (1,4,5,9,10,11,12,19,20))
 b = Board((j1, j2, j7))
 
 
+# initialize the board: set all pins to input
 def _init_board():
     for port in b.ports:
         for pin in port.pins:
-            gf.gpio.setup(port.pins[pin].tuple, DIRECTION_IN)   # set the corresponding pin to input for initialization
-            port.pins[pin].state = gf.gpio.input(port.pins[pin].tuple)
-            port.pins[pin].mode = "i" 
-            print(port.pins[pin].tuple)
-
-    #print(gpio_board.get_available_pins())
+            set_greatfet_input(port, pin)
             
 
 # set a pin as input
