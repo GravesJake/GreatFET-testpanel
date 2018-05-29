@@ -2,7 +2,7 @@ To use:
 
 -Make sure that you have the most up to date greatfet (https://github.com/greatscottgadgets/greatfet) and GreatFET-testpanel (https://github.com/GravesJake/GreatFET-testpanel) repos cloned.
 
--Mkae sure that you have all dependencies installed. You will need the following: python3; python3-tk
+-Make sure that you have all dependencies installed. You will need the following: python3; python3-tk
 
 -Navigate to the greatfet/host directory
 
