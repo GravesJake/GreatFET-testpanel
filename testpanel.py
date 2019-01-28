@@ -44,7 +44,7 @@ class TestPanel(tk.Tk):
         hardware._init_board()
 
     def set_input(self, port, pin, file_flag):
-        hardware.set_greatfet_input(port, pin)  # configure board
+        hardware.set_input_pin(port, pin)  # configure board
         self.set_input_image(port, pin, file_flag)                  # update UI
 
     def set_input_image(self, port, pin, file_flag):
@@ -62,7 +62,7 @@ class TestPanel(tk.Tk):
             self.options.zero_button.config(state='disabled')
 
     def set_output(self, port, pin, file_flag):
-        hardware.set_greatfet_output(port, pin)                 # configure board
+        hardware.set_output_pin(port, pin)                 # configure board
         self.set_output_image(port, pin, file_flag)                             # update UI
 
     def set_output_image(self, port, pin, file_flag):
@@ -75,7 +75,7 @@ class TestPanel(tk.Tk):
             self.options.zero_button.config(state='normal')
 
     def set_high(self, port, pin):
-        hardware.set_greatfet_high(port, pin)
+        hardware.set_pin_high(port, pin)
         self.set_high_image(port, pin)
 
     def set_high_image(self, port, pin):
@@ -83,7 +83,7 @@ class TestPanel(tk.Tk):
         self.canvas.buttons[port.name][pin].config(image=self.red_one_button_image) # set image high
 
     def set_low(self, port, pin):
-        hardware.set_greatfet_low(port, pin)
+        hardware.set_pin_low(port, pin)
         self.set_low_image(port, pin)
 
     def set_low_image(self, port, pin):

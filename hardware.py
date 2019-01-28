@@ -4,7 +4,7 @@ from greatfet import GreatFET
 from greatfet.peripherals.gpio import DIRECTION_IN, DIRECTION_OUT
 from greatfet.boards.one import GreatFETOne
 
-gf = GreatFET() 
+gf = GreatFET()
 
 
 class Board():
@@ -42,29 +42,30 @@ b = Board((j1, j2, j7))
 def _init_board():
     for port in b.ports:
         for pin in port.pins:
-            set_greatfet_input(port, pin)
+            set_input_pin(port, pin)
             
 
 # set a pin as input
-def set_greatfet_input(port, pin):  
-    gf.gpio.setup(port.pins[pin].tuple, DIRECTION_IN)
+def set_input_pin(port, pin):
+    gf.gpio.set_up_pin(port.pins[pin].tuple, DIRECTION_IN)
     port.pins[pin].mode = "i" 
-    port.pins[pin].state = gf.gpio.input(port.pins[pin].tuple) # read the high/low state from the board (True/False)
+    port.pins[pin].state = gf.gpio.read_pin_state(port.pins[pin].tuple) # read the high/low state from the board (True/False)
 
 
 # set a pin as output
-def set_greatfet_output(port, pin): 
-    gf.gpio.setup(port.pins[pin].tuple, DIRECTION_OUT)
+def set_output_pin(port, pin):
+    gf.gpio.set_up_pin(port.pins[pin].tuple, DIRECTION_OUT)
     port.pins[pin].mode = "o"   
 
 
 # set an output pin high
-def set_greatfet_high(port, pin):       
-    gf.gpio.output(port.pins[pin].tuple, 1) # 1 for high
+def set_pin_high(port, pin):
+    gf.gpio.set_pin_state(port.pins[pin].tuple, 1) # 1 for high
     port.pins[pin].state = True             # high
 
 
 # set an output pin low
-def set_greatfet_low(port, pin):        
-    gf.gpio.output(port.pins[pin].tuple, 0) # 0 for low
+def set_pin_low(port, pin):
+    gf.gpio.set_pin_state(port.pins[pin].tuple, 0) # 0 for low
     port.pins[pin].state = False            #low
+
