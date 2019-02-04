@@ -4,7 +4,11 @@ from greatfet import GreatFET
 from greatfet.peripherals.gpio import DIRECTION_IN, DIRECTION_OUT
 from greatfet.boards.one import GreatFETOne
 
-gf = GreatFET()
+
+try:
+    gf = GreatFET()
+except NameError:
+    print("Device not found")
 
 
 class Board():
