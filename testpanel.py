@@ -13,9 +13,9 @@ class MainWindow(QWidget):
     def __init__(self, parent=None):
         super(MainWindow, self).__init__(parent)
     
-        self.initUI()
+        self.init_ui()
         
-    def initUI(self):               
+    def init_ui(self):               
         self.setWindowTitle('GreatFET Test Panel')
 
         label = QLabel(self)
@@ -23,32 +23,34 @@ class MainWindow(QWidget):
         label.setPixmap(pixmap)
         
         self.resize(pixmap.width(), pixmap.height())
-        self.initButtons()
+        self.init_buttons_ui()
+        self.init_buttons_functions()
         center(self)
         self.show()
 
-    def initButtons(self):
+    def init_buttons_ui(self):
         h = 32
         w = 32
         x_offset = 43
         y_offset = 41
-        self.j1_buttons = [None]
-        self.j2_buttons = [None]
-        self.j7_buttons = [None]
+        self.j1_buttons = []
+        self.j2_buttons = []
+        self.j7_buttons = []
 
         # J1/J2/J7 Buttons
         x = 190
         ports = 3
         columns = 20
         rows = 2
+
         for i in range(ports):
-            if i is 0:
-                y = 802
+            if i == 0:
+                y = 843
                 buttons = self.j1_buttons
-            if i is 1:
-                y = 27
+            if i == 1:
+                y = 68
                 buttons = self.j2_buttons
-            if i is 2:
+            if i == 2:
                 y = 112
                 buttons = self.j7_buttons
                 rows = 1
@@ -59,25 +61,38 @@ class MainWindow(QWidget):
                     button.setIcon(QIcon('icons/black_button.png'))
                     button.setIconSize(QSize(w,h))
                     button.move(x,y)
-                    button.clicked.connect(self.handleButton)
                     buttons.append(button)
-                    y += y_offset
-                y -= y_offset*rows
+                    y -= y_offset
+                y += y_offset*rows
                 x += x_offset
             x -= x_offset*20
 
-        print("J1 buttons:", len(self.j1_buttons))
-        print("J2 buttons:", len(self.j2_buttons))
-        print("J7 buttons:", len(self.j7_buttons))
+    def init_buttons_functions(self):
+        for i, pin_button in enumerate(self.j1_buttons, start=1):
+            if i not in hardware.j1.unclickable_pins:
+                pin_button.clicked.connect(self.make_handle_button(hardware.j1, i))
 
+        for i, pin_button in enumerate(self.j2_buttons, start=1):
+            if i not in hardware.j2.unclickable_pins:
+                pin_button.clicked.connect(self.make_handle_button(hardware.j2, i))
 
-    def handleButton(self):
-        self.dialog = OptionsWindow()
-        self.dialog.show()
+        for i, pin_button in enumerate(self.j7_buttons, start=1):
+            if i not in hardware.j7.unclickable_pins:
+                pin_button.clicked.connect(self.make_handle_button(hardware.j7, i))
+
+    # factory function to handle different port/pin combinations for buttons
+    def make_handle_button(self, port, pin):
+        def handle_button():
+            print("handle_button")
+            print(port)
+            print(pin)
+            self.dialog = OptionsWindow(port, pin)
+            self.dialog.show()
+        return handle_button
 
 
 class OptionsWindow(QWidget):
-    def __init__(self, parent=None):
+    def __init__(self, port, pin, parent=None):
         super(OptionsWindow, self).__init__(parent)
         
         self.setWindowTitle("Pin Options")
@@ -89,10 +104,10 @@ class OptionsWindow(QWidget):
         output_button = QRadioButton('Output')
         high_button = QRadioButton('High')
         low_button = QRadioButton('Low')
-        input_button.clicked.connect(self.set_input)
-        output_button.clicked.connect(self.set_output)
-        high_button.clicked.connect(self.set_high)
-        low_button.clicked.connect(self.set_low)
+        input_button.clicked.connect(lambda: self.set_input(port, pin))
+        output_button.clicked.connect(lambda: self.set_output(port, pin))
+        high_button.clicked.connect(lambda: self.set_high(port, pin))
+        low_button.clicked.connect(lambda: self.set_low(port, pin))
         layout.addWidget(input_button)
         layout.addWidget(output_button)
         layout.addWidget(high_button)
@@ -100,17 +115,17 @@ class OptionsWindow(QWidget):
         self.setLayout(layout)
         self.show()
 
-    def set_input(self):
-        hardware.set_input_pin(hardware.j2, 8)  # configure board
+    def set_input(self, port, pin):
+        hardware.set_input_pin(port, pin)  # configure board
     
-    def set_output(self):
-        hardware.set_output_pin(hardware.j2, 8)                 # configure board
+    def set_output(self, port, pin):
+        hardware.set_output_pin(port, pin)                 # configure board
         
-    def set_high(self):
-        hardware.set_pin_high(hardware.j2, 8)
+    def set_high(self, port, pin):
+        hardware.set_pin_high(port, pin)
 
-    def set_low(self, ):
-        hardware.set_pin_low(hardware.j2, 8)
+    def set_low(self, port, pin):
+        hardware.set_pin_low(port, pin)
 
 # this feels weird not being inside of a class and using self
 def center(self):
