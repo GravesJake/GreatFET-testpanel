@@ -41,6 +41,7 @@ class PanelWindow(QWidget):
         x_offset = 43
         y_offset = 41
         num_of_ports = 3
+        num_of_columns = 20
 
         for port_num in range(num_of_ports):
             if port_num == 0:
@@ -53,7 +54,7 @@ class PanelWindow(QWidget):
                 y = 112
                 current_buttons = PanelWindow.j7_buttons
 
-            for button_pair in range(20):
+            for button_pair in range(num_of_columns):
                 button = QPushButton('', self)
                 button.resize(w+4,h+4)
                 button.setIcon(QIcon('icons/black_button.png'))
@@ -63,7 +64,7 @@ class PanelWindow(QWidget):
                 if port_num != 2:
                     y -= y_offset
                     button = QPushButton('', self)
-                    button.resize(w+4,h+4)
+                    button.resize(w+4,h+4)  # make the button slightly bigger than the image for visual effect
                     button.setIcon(QIcon('icons/black_button.png'))
                     button.setIconSize(QSize(w,h))
                     button.move(x,y)
@@ -102,13 +103,9 @@ class PanelWindow(QWidget):
         for port in hardware.b.ports:   # look through all the ports on the board
             for pin in port.pins:       # look through all the pins in each port
                 if port.pins[pin].mode == "i": # i for input pins
-                    port.pins[pin].state = hardware.gf.gpio.input(port.pins[pin].tuple) # read/set the state of the input pins (High/Low)
-                    if port.pins[pin].state == True:
-                        PanelWindow.buttons[port.name][pin].setIcon(QIcon('icons/green_one_button.png'))
-                    else:
-                        PanelWindow.buttons[port.name][pin].setIcon(QIcon('icons/green_zero_button.png'))
-                
+                    OptionsWindow.set_input(OptionsWindow, port, pin)
 
+                    
 class OptionsWindow(QWidget):
     def __init__(self, port, pin, parent=None):
         super(OptionsWindow, self).__init__(parent)
